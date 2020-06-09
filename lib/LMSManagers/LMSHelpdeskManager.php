@@ -93,9 +93,10 @@ class LMSHelpdeskManager extends LMSManager implements LMSHelpdeskManagerInterfa
      *      unread - ticket unread flag (default: null or < 0 = any),
      *          0 - read tickets,
      *          1 - unread tickets,
-     *      parent - ticket parentid
+     *      parentids - ticket parentid
      *          null (default: null = any),
-     *          1 - show only parent tickets
+     *          -1 - show only parent tickets
+     *          single integer value - all tickets with the same parent id
      *      verifierids - ticket verifier (default: null = any/none)
      *          array() of integer values,
      *          all - filter is off
@@ -121,7 +122,7 @@ class LMSHelpdeskManager extends LMSManager implements LMSHelpdeskManagerInterfa
     {
         extract($params);
         foreach (array('ids', 'state', 'priority', 'owner', 'catids', 'removed', 'netdevids', 'netnodeids', 'deadline',
-            'serviceids', 'typeids', 'unread', 'parent','verifierids') as $var) {
+            'serviceids', 'typeids', 'unread', 'parentids','verifierids') as $var) {
             if (!isset($$var)) {
                 $$var = null;
             }
@@ -345,14 +346,16 @@ class LMSHelpdeskManager extends LMSManager implements LMSHelpdeskManagerInterfa
         } else {
             $unreadfilter = '';
         }
-        if (!is_array($parent) && !empty($parent)) {
-            switch ($parent) {
-                case '1':
-                    $parentfilter = ' AND t.parentid IS NULL';
-                    break;
-                default:
-                    $parentfilter = '';
-                    break;
+
+        if (!empty($parentids)) {
+            if (!is_array($parentids)) {
+                $parentids = array($parentids);
+            }
+
+            if (in_array(-1, $parentids)) {
+                $parentfilter = ' AND t.parentid IS NULL';
+            } else {
+                $parentfilter = ' AND t.parentid IN (' . implode(',', $parentids) . ')';
             }
         }
 
@@ -1148,7 +1151,7 @@ class LMSHelpdeskManager extends LMSManager implements LMSHelpdeskManagerInterfa
             $ticket['requestor_userid'] = 0;
         }
 
-        $ticket['categories'] = $this->db->GetAllByKey('SELECT categoryid AS id, c.name
+        $ticket['categories'] = $this->db->GetAllByKey('SELECT categoryid AS id, c.name, c.style
 								FROM rtticketcategories tc
 								JOIN rtcategories c ON c.id = tc.categoryid
 								WHERE ticketid = ?', 'id', array($id));
@@ -1612,26 +1615,34 @@ class LMSHelpdeskManager extends LMSManager implements LMSHelpdeskManagerInterfa
             }
         }
 
-        if (isset($props['requestor']) && empty($props['requestor'])) {
-            $props['requestor'] = '';
+        if (array_key_exists('requestor', $props)) {
+            if (empty($props['requestor'])) {
+                $props['requestor'] = '';
+            }
         } else {
             $props['requestor'] = $ticket['requestor'];
         }
 
-        if (isset($props['requestor_userid']) && empty($props['requestor_userid'])) {
-            $props['requestor_userid'] = null;
+        if (array_key_exists('requestor_userid', $props)) {
+            if (empty($props['requestor_userid'])) {
+                $props['requestor_userid'] = null;
+            }
         } else {
             $props['requestor_userid'] = $ticket['requestor_userid'];
         }
 
-        if (isset($props['requestor_phone']) && empty($props['requestor_phone'])) {
-            $props['requestor_phone'] = null;
+        if (array_key_exists('requestor_phone', $props)) {
+            if (empty($props['requestor_phone'])) {
+                $props['requestor_phone'] = null;
+            }
         } else {
             $props['requestor_phone'] = $ticket['requestor_phone'];
         }
 
-        if (isset($props['requestor_mail']) && empty($props['requestor_mail'])) {
-            $props['requestor_mail'] = null;
+        if (array_key_exists('requestor_mail', $props)) {
+            if (empty($props['requestor_mail'])) {
+                $props['requestor_mail'] = null;
+            }
         } else {
             $props['requestor_mail'] = $ticket['requestor_mail'];
         }
@@ -1709,6 +1720,17 @@ class LMSHelpdeskManager extends LMSManager implements LMSHelpdeskManagerInterfa
         if (empty($props['relatedtickets'])) {
             $props['relatedtickets'] = array();
         }
+        // find tickets with the same as current ticket parentid set before the moment
+        // and treat them as related tickets too
+        if (!empty($relatedtickets) && !empty($props['parentid'])) {
+            foreach ($relatedtickets as $ticket) {
+                if ($ticket['parentid'] == $props['parentid']) {
+                    $props['relatedtickets'][] = $ticket['id'];
+                }
+            }
+            $props['relatedtickets'] = array_unique($props['relatedtickets']);
+        }
+
         $relations_to_remove = array_diff(array_keys($relatedtickets), array_values($props['relatedtickets']));
         if (!empty($relations_to_remove)) {
             foreach ($relations_to_remove as $tid) {
@@ -2135,7 +2157,7 @@ class LMSHelpdeskManager extends LMSManager implements LMSHelpdeskManagerInterfa
     public function GetRelatedTickets($ticketid)
     {
         return $this->db->GetAllByKey(
-            'SELECT id, subject AS name FROM rttickets WHERE id <> ? AND parentid = (SELECT parentid FROM rttickets WHERE id = ?) ORDER BY id',
+            'SELECT id, subject AS name, parentid FROM rttickets WHERE id <> ? AND parentid = (SELECT parentid FROM rttickets WHERE id = ?) ORDER BY id',
             'id',
             array($ticketid, $ticketid)
         );
