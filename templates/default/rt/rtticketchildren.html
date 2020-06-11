@@ -5,17 +5,22 @@
 		<COL style="width: 1%;">
 	</COLGROUP>
 	<THEAD>
-		<TR class="hand lmsbox-titlebar" data-lmsbox-content="parentpanel-{$layout.module}">
+		<TR class="hand lmsbox-titlebar nobr" data-lmsbox-content="childpanel-{$layout.module}">
 			<TD class="bold">
-				<i class="lms-ui-icon-helpdesk"></i> {trans("Parent ticket:")}
+				<i class="lms-ui-icon-helpdesk"></i> {trans("Child tickets:")}
 			</TD>
-			<TD></TD>
+			<TD>
+				{if $ticket.state != $smarty.const.RT_RESOLVED}
+					{button icon="add" label="Add"
+						onclick="location.href='?m=rtticketadd&parentid={$ticket.ticketid}{if $ticket.customerid}&customerid={$ticket.customerid}{/if}';"}
+				{/if}
+			</TD>
 		</TR>
 	</THEAD>
 	<TBODY>
-		<TR id="parentpanel-{$layout.module}">
+		<TR id="childpanel-{$layout.module}">
 			<TD colspan="2">
-				<table class="lmsbox{if !$parentticket}-inner{/if} lms-ui-background-cycle">
+				<table class="lmsbox{if !$childtickets}-inner{/if} lms-ui-background-cycle">
 					<COLGROUP>
 					    <COL style="width: 1%;">
 					    <COL style="width: 1%;">
@@ -32,13 +37,13 @@
 						{include file="rt/rtheader.html"}
 					</THEAD>
 					<TBODY>
-					{foreach $parentticketcontent as $ticket}
-						{$ticket.id = $ticket.ticketid}
+					{foreach $childticketscontent as $ticket}
+						{$id = $ticket.ticketid}
 						{include file="rt/rtqueueviewboxrow.html"}
 					{foreachelse}
 					<TR>
 						<TD COLSPAN="11" class="empty-table">
-							<p>{trans("There is no assigned parent ticket.")}</p>
+							<p>{trans("There is no child tickets")}</p>
 						</TD>
 					</TR>
 					{/foreach}
@@ -50,6 +55,6 @@
 </TABLE>
 
 <SCRIPT type="text/javascript">
-	if (getCookie('relationpanel-{$layout.module}') == '1')
-		document.getElementById('relationpanel-{$layout.module}').style.display = '';
+	if (getCookie('childpanel-{$layout.module}') == '1')
+		document.getElementById('childpanel-{$layout.module}').style.display = '';
 </SCRIPT>

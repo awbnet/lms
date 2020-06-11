@@ -24,6 +24,8 @@
  *  $Id$
  */
 
+$_LANG['Customer has not any assigned email contacts with "documents" flag!'] = 'Klient nie posiada przypisanych żadnych adresów poczty elektronicznej z ustawioną flagą "dokumenty"!';
+
 $_LANG['show average speed'] = 'pokaż prędkość średnią';
 $_LANG['show maximum speed'] = 'pokaż prędkość maksymalną';
 
@@ -59,6 +61,7 @@ $_LANG['Parent ticket:'] = 'Zgłoszenie nadrzędne:';
 $_LANG['show only parent tickets'] = 'pokaż tylko zgłoszenia nadrzędne';
 $_LANG['Enter ID of parent ticket'] = 'Wprowadź ID zgłoszenia narzędnego';
 $_LANG['There is no related tickets'] = 'Brak powiązanych zgłoszeń';
+$_LANG['There is no child tickets'] = 'Brak zgłoszeń podrzędnych';
 $_LANG['Related tickets:'] = 'Powiązane zgłoszenia:';
 $_LANG['Child tickets:'] = 'Podrzędne zgłoszenia:';
 $_LANG['Verified'] = 'Weryfikowany';
