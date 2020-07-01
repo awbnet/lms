@@ -26,7 +26,7 @@ version 26-git (????-??-??):
     definition [chilan]
   - improvement: voip account password generation link near password form field [chilan]
   - enhancement: implemented visibility toggle of customer/node panels/tabs/boxes [chilan]
-  - improvement: allow to use ticket filter owner option 'no owner' together with 
+  - improvement: allow to use ticket filter owner option 'no owner' together with
     selected user in helpdesk [interduo]
   - improvement: enable/disable related ticket list selector based on parent ticket
     definition [chilan]
@@ -36,6 +36,23 @@ version 26-git (????-??-??):
     input fields [chilan]
   - improvement: lms-cashimport.php script generates import report on output [chilan]
   - enhancement: userpanel startup module can be defined from user interface [interduo]
+  - improvement: new customer can get first free identifier when 'phpui.reuse_customer_id'
+    is set to 'true' [chilan]
+  - improvement: added phpui.timetable_hide_disabled_users setting
+    in eventmodify/eventlistfilter [interduo]
+  - enhancement: allow to disable state changes new->open when adding note to ticket - now
+    it depends on variable rt.change_ticket_state_to_open_after_note_add_interval
+    (default: 0, which keeps current behaviour) [interduo]
+  - improvement: allow to quickly resend existing message [chilan]
+  - enhancement: implemeneted main menu item visibility toggle basing on user permissions [chilan]
+  - improvement: allow to hide createtime in ticket row (variable:
+    rt.hide_ticket_row_create_time, default: 0) [interduo]
+  - enhancement: hosting: added support for ALIAS and ANAME record types - they are used
+    by github pages [chilan]
+  - enhancement: allow to quickly clone existing invoice [chilan]
+  - enhancement: implemented true responsive menu popups [chilan]
+  - enhancement: implemented bulk operations on customer contact flags in customer search
+    result [chilan]
 
 version 25.0 (2020-05-15):
 

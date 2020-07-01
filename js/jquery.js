@@ -516,7 +516,7 @@ function showGallery(data) {
 	Galleria.ready(function() {
 		var gallery = this;
 		this.addElement('buttons').appendChild('container', 'buttons');
-		this.$('buttons').html('<i class="fullscreen-button fa-2x lms-ui-icon-fullscreen-on"/><i class="close-button fa-2x lms-ui-icon-hide"/>')
+		this.$('buttons').html('<i class="fullscreen-button lms-ui-icon-fullscreen-on"></i><i class="close-button lms-ui-icon-hide"></i>')
 			.on('click', 'i', function() {
 				if ($(this).is('.close-button')) {
 					gallery.destroy();
@@ -1622,10 +1622,6 @@ $(function() {
 */
 
 	$(document).click(function(e) {
-		if (!$(e.target).is('.lms-ui-dropdown-toggle') && !$(e.target).closest('.lms-ui-dropdown-toggle').length) {
-			$('.lms-ui-dropdown-buttons').removeClass('show');
-		}
-
 		if ($(e.target).is('.lms-ui-button') || $(e.target).closest('.lms-ui-suggestion-item').length) {
 			return;
 		}
@@ -1692,28 +1688,6 @@ $(function() {
 	// disables jquery-ui tooltip after any key press in ui control
 	$(document).on('keypress', "[data-tooltip]", function() {
 		$(this).tooltip('disable');
-	});
-
-	$(window).resize(function() {
-		var dropdown_buttons = $('.lms-ui-dropdown-buttons.show');
-		if (dropdown_buttons.length && parseInt($(this).outerWidth()) <= 1200) {
-			dropdown_buttons.position({
-				my: "right",
-				at: "left",
-				of: dropdown_buttons.prev()
-			});
-		}
-	});
-
-	$('.lms-ui-dropdown-toggle').click(function() {
-		var dropdown_buttons = $(this).next();
-		dropdown_buttons.toggleClass('show');
-		$('.lms-ui-dropdown-buttons').not(dropdown_buttons).removeClass('show');
-		dropdown_buttons.position({
-			my: "right",
-			at: "left",
-			of: this
-		})
 	});
 
 	$('button[type="submit"]').each(function() {
