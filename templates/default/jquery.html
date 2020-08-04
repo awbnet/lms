@@ -24,8 +24,8 @@
 <script type="text/javascript" src="js/jquery-simple-combobox/js/jquery.scombobox.min.js"></script>
 *}
 <script src="js/sprintf.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/galleria/1.6.1/galleria.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/galleria/1.6.1/themes/classic/galleria.classic.min.js"></script>
+<script src="js/galleria/galleria.min.js"></script>
+<script src="js/galleria/themes/classic/galleria.classic.min.js"></script>
 <script>
 
 	var lmsSettings = {
@@ -39,6 +39,7 @@
 		multiSelectMaxVisible: '{ConfigHelper::getConfig('phpui.multiselect_max_visible', 0)}',
         eventTimeStep: {ConfigHelper::getConfig('phpui.event_time_step', 30)},
 		openCalendarOnInputClick: {if ConfigHelper::checkConfig('phpui.open_calendar_on_input_click')}true{else}false{/if},
+		uploadedImageMaxSize: {intval(ConfigHelper::getConfig('phpui.uploaded_image_max_size', 0))},
 		monthlyPeriod: {$smarty.const.MONTHLY}
 	};
 

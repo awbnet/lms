@@ -397,8 +397,10 @@ switch ($action) {
         $subtitle = trans('New IP address');
         $nodeipdata = $_POST['ipadd'];
         $nodeipdata['ownerid'] = null;
-        foreach ($nodeipdata['macs'] as $key => $value) {
-            $nodeipdata['macs'][$key] = str_replace('-', ':', $value);
+        if (!empty($nodeipdata['macs'])) {
+            foreach ($nodeipdata['macs'] as $key => $value) {
+                $nodeipdata['macs'][$key] = str_replace('-', ':', $value);
+            }
         }
 
         $nodeipdata = trim_rec($nodeipdata);
@@ -505,8 +507,10 @@ switch ($action) {
         $subtitle = trans('IP address edit');
         $nodeipdata = $_POST['ipadd'];
         $nodeipdata['ownerid'] = null;
-        foreach ($nodeipdata['macs'] as $key => $value) {
-            $nodeipdata['macs'][$key] = str_replace('-', ':', $value);
+        if (!empty($nodeipdata['macs'])) {
+            foreach ($nodeipdata['macs'] as $key => $value) {
+                $nodeipdata['macs'][$key] = str_replace('-', ':', $value);
+            }
         }
 
         foreach ($nodeipdata as $key => $value) {
@@ -573,7 +577,7 @@ switch ($action) {
         $macs = array();
         foreach ($nodeipdata['macs'] as $key => $value) {
             if (check_mac($value)) {
-                if ($value != '00:00:00:00:00:00' && !ConfigHelper::checkValue(ConfigHelper::getConfig('phpui.allow_mac_sharing', true))) {
+                if ($value != '00:00:00:00:00:00' && !ConfigHelper::checkConfig('phpui.allow_mac_sharing')) {
                     if (($nodeid = $LMS->GetNodeIDByMAC($value)) != null && $nodeid != $_GET['ip']) {
                         $error['mac' . $key] = trans('MAC address is in use!');
                     }
@@ -685,9 +689,13 @@ if (isset($netdev)) {
         $error['netdev[teryt]'] = trans('TERRIT address is required!');
     }
 
-    if (empty($netdev['ownerid']) && $netdev['location_zip'] && !Utils::checkZip($netdev['location_zip'], $netdev['location_country_id'])) {
+    if (!empty($netdev['location_country_id'])) {
+        Localisation::setSystemLanguage($LMS->getCountryCodeById($netdev['location_country_id']));
+    }
+    if (empty($netdev['ownerid']) && $netdev['location_zip'] && !check_zip($netdev['location_zip'])) {
         $error['location_zip'] = trans('Incorrect ZIP code!');
     }
+    Localisation::resetSystemLanguage();
 
     $hook_data = $LMS->executeHook(
         'netdevedit_validation_before_submit',

@@ -53,6 +53,33 @@ version 26-git (????-??-??):
   - enhancement: implemented true responsive menu popups [chilan]
   - enhancement: implemented bulk operations on customer contact flags in customer search
     result [chilan]
+  - enhancement: implemented true responsive lms-ui-multiselect control [chilan]
+  - enhancement: 'payments.prefer_netto' allows to enable netto value usage produced by plugins
+    ('false' by default) [televoice]
+  - enhancement: separate the Tcpdf transfer form into a separate class [ravvar]
+  - enhancement: responsive version of layout implemented [chilan]
+  - improvement: 'phpui.promotion_activation_at_next_day' configuration variable support new 'business'
+    value which causes next business day usage for activation [chilan]
+  - enhancement: 'phpui.promotion_use_discounts' configuration variable allows to force
+    value discounts usage in assignments created basing on promotion schemas [chilan]
+  - improvement: replace the transfer form from HTML to Tcpdf [ravvar]
+  - enhancement: allow to show the transfer form on the invoice for selected customers [ravvar]
+  - devel/improvement: localisation support moved to separate class - symultaneous multi-localisation
+    support [chilan]
+  - devel/refactoring: moved currency configuration to Localisation class [chilan]
+  - improvement: separate smarty function for paytype selection - items are sorted by name
+    in accordance with current ui locale [chilan]
+  - improvement: customer identifiers are validated with billing address country in mind [chilan]
+  - enhancement: 'phpui.uploaded_image_max_size' allows to resize images uploaded to server on web
+    browser side to specified size (default '0' value means disabled) [chilan]
+  - bugfix: postgresql: connect through IP instead of socket when localhost is set
+    in lms.ini [interduo]
+  - enhancement: if uploaded image scaling is enable allow to disable scaling using optional
+    checkbox [chilan]
+  - improvement: don't show quick search fields when current user has no permissions to related
+    part of system [chilan]
+  - improvement: added 'phpui.send_message_confirm_threshold' configuration variable which control
+    how many potential message recipients trigger confirmation dialog ('50' by default) [milek]
 
 version 25.0 (2020-05-15):
 
@@ -372,6 +399,7 @@ version 25.0 (2020-05-15):
     default) [chilan]
   - improvement: 'phpui.quicksearch_keyboard_shortcut_modifier' defines quick search keyboard shortcut
     modifier key ('ctrl' by default) [chilan]
+  - improvement: confirmation dialogs are responsive [chilan]
 
 version 24.0 (2019-05-16):
 

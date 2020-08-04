@@ -91,7 +91,7 @@ if (isset($_POST['properties']) && is_array($_POST['properties'])) {
 
 switch ($mode) {
     case 'customer':
-        if (empty($search)) {
+        if (empty($search) || (!ConfigHelper::checkPrivilege('customer_management') && !ConfigHelper::checkPrivilege('read_only'))) {
             die;
         }
 
@@ -131,13 +131,15 @@ switch ($mode) {
                     $customer_count[$customername]++;
                 }
                 foreach ($candidates as $idx => $row) {
+                    $icon = 'fa-fw lms-ui-icon-customer-status-' . $CSTATUSES[$row['status']]['alias'];
+
                     $name = truncate_str('(#' . $row['id'] . ') ' . $row['customername'], 50);
 
                     $name_classes = array();
                     if ($row['deleted']) {
                         $name_classes[] = 'blend';
                     }
-                    $name_classes[] = 'lms-ui-suggestion-customer-status-' . $CSTATUSES[$row['status']]['alias'];
+                    //$name_classes[] = 'lms-ui-suggestion-customer-status-' . $CSTATUSES[$row['status']]['alias'];
                     $name_class = implode(' ', $name_classes);
 
                     $description = '';
@@ -180,7 +182,7 @@ switch ($mode) {
                         $description = trans('Notes:') . ' ' . $row['notes'];
                     }
 
-                    $result[$row['id']] = compact('name', 'name_class', 'description', 'description_class', 'action');
+                    $result[$row['id']] = compact('icon', 'name', 'name_class', 'description', 'description_class', 'action');
                 }
             }
             $hook_data = array(
@@ -256,7 +258,7 @@ switch ($mode) {
         break;
 
     case 'customerext':
-        if (empty($search)) {
+        if (empty($search) || (!ConfigHelper::checkPrivilege('customer_management') && !ConfigHelper::checkPrivilege('read_only'))) {
             die;
         }
 
@@ -309,7 +311,8 @@ switch ($mode) {
         break;
 
     case 'phone':
-        if (empty($search)) {
+        if (empty($search) || (!ConfigHelper::checkPrivilege('customer_management')
+                && !ConfigHelper::checkPrivilege('voip_account_management') && !ConfigHelper::checkPrivilege('read_only'))) {
             die;
         }
 
@@ -397,7 +400,7 @@ switch ($mode) {
 
 
     case 'node':
-        if (empty($search)) {
+        if (empty($search) || (!ConfigHelper::checkPrivilege('node_management') && !ConfigHelper::checkPrivilege('read_only'))) {
             die;
         }
 
@@ -541,7 +544,7 @@ switch ($mode) {
         break;
 
     case 'netnode':
-        if (empty($search)) {
+        if (empty($search) || (!ConfigHelper::checkPrivilege('network_management') && !ConfigHelper::checkPrivilege('read_only'))) {
             die;
         }
 
@@ -597,7 +600,7 @@ switch ($mode) {
         break;
 
     case 'netdevice':
-        if (empty($search)) {
+        if (empty($search) || (!ConfigHelper::checkPrivilege('network_management') && !ConfigHelper::checkPrivilege('read_only'))) {
             die;
         }
 
@@ -671,7 +674,7 @@ switch ($mode) {
         break;
 
     case 'ticket':
-        if (empty($search)) {
+        if (empty($search) || (!ConfigHelper::checkPrivilege('helpdesk_operation') && !ConfigHelper::checkPrivilege('read_only'))) {
             die;
         }
 
@@ -799,7 +802,7 @@ switch ($mode) {
         }
         break;
     case 'wireless':
-        if (empty($search)) {
+        if (empty($search) || (!ConfigHelper::checkPrivilege('network_management') && !ConfigHelper::checkPrivilege('read_only'))) {
             die;
         }
 
@@ -854,7 +857,7 @@ switch ($mode) {
         }
         break;
     case 'network':
-        if (empty($search)) {
+        if (empty($search) || (!ConfigHelper::checkPrivilege('network_management') && !ConfigHelper::checkPrivilege('read_only'))) {
             die;
         }
 
@@ -916,7 +919,7 @@ switch ($mode) {
 
         break;
     case 'account':
-        if (empty($search)) {
+        if (empty($search) || (!ConfigHelper::checkPrivilege('hosting_management') && !ConfigHelper::checkPrivilege('read_only'))) {
             die;
         }
 
@@ -986,7 +989,7 @@ switch ($mode) {
         break;
 
     case 'document':
-        if (empty($search)) {
+        if (empty($search) || (!ConfigHelper::checkPrivilege('customer_management') && !ConfigHelper::checkPrivilege('read_only'))) {
             die;
         }
 

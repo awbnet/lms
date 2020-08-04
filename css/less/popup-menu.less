@@ -24,16 +24,18 @@
 
 #lms-ui-popup-menu {
   display: none;
-  &.show {
+  &.open {
     display: flex;
   }
+  z-index: 80;
   flex-direction: column;
   position: absolute;
   max-width: 25em;
   max-height: 30em;
-  z-index: 30000;
   background-color: @light;
-  border: @frame;
+  @media screen and (min-width: @mobile-max-width + 1px) {
+    border: @frame;
+  }
   box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
   padding: 1em;
   font-weight: bold;
@@ -53,6 +55,7 @@
 
   #lms-ui-popup-menu-content {
     overflow-y: auto;
+    max-height: calc(100% - 2.2em);
   }
 
   ul {
@@ -68,6 +71,13 @@
       padding-left: 2.5em;
       padding-right: 0.5em;
       text-indent: -1.7em;
+
+      @media screen and (max-width: @mobile-max-width) {
+        &:not(:last-child) {
+          border-bottom: @dotted-line;
+        }
+      }
+
       i {
         //padding-right: 0.5em;
       }
@@ -78,12 +88,12 @@
     }
   }
 
-  @media screen and (max-width: 800px) {
+  @media screen and (max-width: @mobile-max-width) {
     max-width: unset;
     max-height: unset;
     position: fixed;
     left: 0;
-    top: 0;
+    top: 2em;
     right: 0;
     bottom: 0;
     font-size: 200%;

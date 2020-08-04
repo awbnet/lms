@@ -96,8 +96,9 @@ class LMSSmartyPlugins
             }
             $result .= '</select>';
         } else {
-            $result = LMS::$currency . '<input type="hidden" name="' . $elementname . '"'
-                . (isset($params['form']) ? ' form="' . $params['form'] . '"' : '') . ' value="' . LMS::$currency . '">';
+            $result = Localisation::getCurrentCurrency() . '<input type="hidden" name="' . $elementname . '"'
+                . (isset($params['form']) ? ' form="' . $params['form'] . '"' : '') . ' value="'
+                . Localisation::getCurrentCurrency() . '">';
         }
 
         return $result;
@@ -234,7 +235,7 @@ class LMSSmartyPlugins
             );
         }
 
-        $result = '<div class="fileupload" id="' . $id . '">
+        $result = '<div class="lms-ui-fileupload" id="' . $id . '">
 			<div class="fileupload" id="' . $id . '-progress-dialog" title="' . trans("Uploading files ...") . '" style="display: none;">
 				<div style="padding: 10px;">' . trans("Uploading files to server ...") . '</div>
 				<div class="fileupload-progressbar"><div class="fileupload-progress-label"></div></div>
@@ -243,6 +244,9 @@ class LMSSmartyPlugins
 				<button type="button" class="lms-ui-button-fileupload lms-ui-button' . (isset($error_tip_params) ? ' lms-ui-error' : '') . '" id="' . $id . '_button" '
             . (isset($error_tip_params) ? self::tipFunction($error_tip_params, $template) : '') . '><i class="lms-ui-icon-fileupload"></i> ' . trans("Select files") . '</button>
 				<INPUT name="' . $id . '[]" type="file" multiple class="fileupload-select-btn" style="display: none;" ' . ($form ? ' form="' . $form . '"' : '') . '>
+				' . (ConfigHelper::getConfig('phpui.uploaded_image_max_size', 0)
+                    ? '<label><input type="checkbox" class="dont-scale-images" value="1">' . trans("don't scale images") . '</label>'
+                    : '') . '
 			</div>
 			<div class="fileupload-files">';
         if (!empty($fileupload) && isset($fileupload[$id])) {
@@ -273,7 +277,10 @@ class LMSSmartyPlugins
 
     public static function locationBoxFunction(array $params, $template)
     {
-        $DB = LMSDB::getInstance();
+        static $countries = array();
+        static $states = array();
+
+        $lms = LMS::getInstance();
 
         if (empty($params)) {
             $params = array();
@@ -352,11 +359,8 @@ class LMSSmartyPlugins
               <td>' . trans('State') . '</td>
               <td>';
 
-        if ($template->getTemplateVars('__states')) {
-            $states = $template->getTemplateVars('__states');
-        } else {
-            $states = $DB->GetCol('SELECT name FROM states;');
-            $template->assign('__states', $states);
+        if (isset($states) && empty($states)) {
+            $states = $lms->GetCountryStates();
         }
 
         if ($states) {
@@ -370,7 +374,7 @@ class LMSSmartyPlugins
             $tmp_state = mb_strtolower($params['location_state_name']);
 
             foreach ($states as $v) {
-                echo '<option ' . (mb_strtolower($v) == $tmp_state ? 'selected' : '')  . '>' . $v . '</option>';
+                echo '<option ' . (!empty($v) && mb_strtolower($v['name']) == $tmp_state ? 'selected' : '')  . '>' . $v['name'] . '</option>';
             }
 
             unset($tmp_state);
@@ -433,17 +437,15 @@ class LMSSmartyPlugins
             $params['countryid'] = -1;
         }
 
-        if ($template->getTemplateVars('__countries')) {
-            $countries = $template->getTemplateVars('__countries');
-        } else {
-            $countries = $DB->GetAll('SELECT id, name FROM countries;');
-            $template->assign('__countries', $countries);
+        if (empty($countries)) {
+            $countries = $lms->GetCountries();
+            Localisation::arraySort($countries, 'name');
         }
 
         if ($countries) {
             echo '<tr><td>' . trans('Country:') . '</td><td>
-              <select name="' . $input_name_country_id . '" data-address="country">
-              <option value="">---</option>';
+                <select name="' . $input_name_country_id . '" data-address="country">
+                <option value="">---</option>';
 
             foreach ($countries as $v) {
                 if ($v['id'] == $params['location_country_id']) {
@@ -835,6 +837,8 @@ class LMSSmartyPlugins
         $name = isset($params['name']) ? $params['name'] : null;
         // optional - text tip,
         $tip = isset($params['tip']) ? trans($params['tip']) : null;
+        // optional - text label
+        $label = isset($params['label']) ? trans($params['label']) : null;
 
         $data_attributes = '';
         foreach ($params as $key => $value) {
@@ -852,6 +856,32 @@ class LMSSmartyPlugins
             . '"'
             . (isset($tip) ? ' title="' . $tip . '"' : '')
             . $data_attributes
-            . '></i>';
+        . '></i>'
+            . (isset($label) ? ' ' . $label : '');
+    }
+
+    public static function paytypesFunction(array $params, $template)
+    {
+        static $paytypes = array();
+
+        if (empty($paytypes)) {
+            $paytypes = $GLOBALS['PAYTYPES'];
+            Localisation::arraySort($paytypes);
+        }
+
+        $elemname = $params['elemname'];
+        $selected = isset($params['selected']) && !empty($params['selected']) ? $params['selected'] : 0;
+        $tip = isset($params['tip']) ? $params['tip'] : trans('Select payment type');
+        $trigger = isset($params['trigger']) ? $params['trigger'] : 'paytype';
+
+        $options = '';
+        foreach ($paytypes as $key => $item) {
+            $item = trans($item);
+            $options .= '<option value="' . $key . '"' . ($selected == $key ? ' selected' : '') . '>' . $item . '</option>';
+        }
+        return '<select name="' . $elemname . '" ' . self::tipFunction(array('text' => $tip, 'trigger' => $trigger), $template) . '>
+			<option value=""' . (!$selected ? ' selected' : '') . '>- ' . trans("default") . '-</option>'
+            . $options
+            . '</select>';
     }
 }

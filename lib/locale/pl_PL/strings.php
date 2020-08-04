@@ -54,6 +54,7 @@ $_LANG['Cannot link ticket because of related ticket loop!'] = 'Nie można powi�
 $_LANG['Ticket parent ID has been set to $a.'] = 'ID zgłoszenia nadrzędnego zostało ustawione na $a.';
 $_LANG['Ticket parent ID has been removed.'] = 'ID zgłoszenia nadrzędnego zostało usunięte.';
 $_LANG['Ticket does not exist'] = 'Zgłoszenie nie istnieje';
+$_LANG['Ticket is unavailable!'] = 'Zgłoszenie niedostępne!';
 $_LANG['Unlink'] = 'Odwiąż';
 $_LANG['<!login>username'] = 'użytkownik';
 $_LANG['<!login>password'] = 'hasło';
@@ -647,6 +648,7 @@ $_LANG['Display this form again, when this group is saved'] = 'Po dodaniu grupy 
 $_LANG['Display tickets matching the following criteria:'] = 'Wyświetl zgłoszenia pasujące do następujących kryteriów';
 $_LANG['DNS servers:'] = 'Serwery DNS:';
 $_LANG['Document'] = 'Dokument';
+$_LANG['Document $a'] = 'Dokument $a';
 $_LANG['Documentation'] = 'Dokumentacja';
 $_LANG['Document with specified number exists!'] = 'Dokument z podanym numerem już istnieje!';
 $_LANG['Domain:'] = 'Domena:';
@@ -4738,6 +4740,7 @@ $_LANG['Warning! Customer action time limit is expired is expired!'] = 'Uwaga! U
 
 $_LANG['document form approval in customer panel using SMS authorization'] = 'zatwierdzanie przez panel abonencki formy dokumentowej autoryzowanej przez SMS';
 $_LANG['document form approval in customer panel using scans'] = 'zatwierdzanie przez panel abonencki formy dokumentowej w postaci skanów';
+$_LANG['invoice transfer form'] = 'druczek przelewu na fakturze';
 
 $_LANG['Copy from billing address'] = 'Kopiuj z adresu bilingowego';
 $_LANG['Copy from post address'] = 'Kopiuj z adresu korespondencyjnego';
@@ -4784,3 +4787,10 @@ $_LANG['more actions'] = 'więcej czynności';
 $_LANG['Ticket $a'] = 'Zgłoszenie $a';
 $_LANG['Event $a'] = 'Zdarzenie $a';
 $_LANG['Queue $a'] = 'Kolejka $a';
+
+$_LANG['Select options'] = 'Wybierz opcje';
+$_LANG['Select owners'] = 'Wybierz właścicieli';
+$_LANG['Select resource type'] = 'Wybierz typ zasobu';
+$_LANG['Customise'] = 'Dostosuj';
+
+$_LANG['don\'t scale images'] = 'nie skaluj obrazków';

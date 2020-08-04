@@ -148,9 +148,6 @@ $SYSLOG = SYSLOG::getInstance();
 
 $AUTH = null;
 $LMS = new LMS($DB, $AUTH, $SYSLOG);
-$LMS->ui_lang = $_ui_language;
-$LMS->lang = $_language;
-LMS::$currency = $_currency;
 
 $plugin_manager = new LMSPluginManager();
 $LMS->setPluginManager($plugin_manager);
@@ -167,6 +164,7 @@ $check_invoices = ConfigHelper::checkConfig('payments.check_invoices');
 $proforma_generates_commitment = ConfigHelper::checkConfig('phpui.proforma_invoice_generates_commitment');
 $delete_old_assignments_after_days = intval(ConfigHelper::getConfig('payments.delete_old_assignments_after_days', 30));
 $prefer_settlement_only = ConfigHelper::checkConfig('payments.prefer_settlement_only');
+$prefer_netto = ConfigHelper::checkConfig('payments.prefer_netto');
 
 function localtime2()
 {
@@ -604,7 +602,7 @@ $documents = $DB->GetAll(
         DOC_DNOTE,
         $daystart,
         $dayend,
-        LMS::$currency,
+        Localisation::getCurrentCurrency(),
     )
 );
 if (!empty($documents)) {
@@ -647,7 +645,7 @@ $cashes = $DB->GetAll(
     'SELECT id, currency FROM cash
     WHERE currency <> ? AND time >= ? AND time <= ?',
     array(
-        LMS::$currency,
+        Localisation::getCurrentCurrency(),
         $daystart,
         $dayend,
     )
@@ -869,14 +867,25 @@ if ($result['assignments']) {
     $assigns = $result['assignments'];
 }
 
+if ($prefer_netto) {
+    $taxeslist = $LMS->GetTaxes();
+}
+
 // determine currency values for assignments with foreign currency
+// if payments.prefer_netto = true, use value netto+tax
 foreach ($assigns as &$assign) {
+    if ($prefer_netto) {
+        if (isset($assign['netvalue']) && !empty($assign['netvalue']) != 0) {
+            $assign['value'] = $assign['netvalue'] * (100 + $taxeslist[$assign['taxid']]['value']) / 100;
+        }
+    }
+
     $currency = $assign['currency'];
     if (empty($currency)) {
-        $assign['currency'] = LMS::$currency;
+        $assign['currency'] = Localisation::getCurrentCurrency();
         continue;
     }
-    if ($currency != LMS::$currency) {
+    if ($currency != Localisation::getCurrentCurrency()) {
         if (!isset($currencyvalues[$currency])) {
             $currencyvalues[$currency] = $LMS->getCurrencyValue($currency, $currtime);
             if (!isset($currencyvalues[$currency])) {
@@ -890,10 +899,10 @@ unset($assign);
 if (!empty($currencyvalues) && !$quiet) {
     print "Currency quotes:" . PHP_EOL;
     foreach ($currencyvalues as $currency => $value) {
-        print '1 ' . $currency . ' = ' . $value . ' ' . LMS::$currency . PHP_EOL;
+        print '1 ' . $currency . ' = ' . $value . ' ' . Localisation::getCurrentCurrency(). PHP_EOL;
     }
 }
-$currencyvalues[LMS::$currency] = 1.0;
+$currencyvalues[Localisation::getCurrentCurrency()] = 1.0;
 
 foreach ($assigns as $assign) {
     $cid = $assign['customerid'];
@@ -902,6 +911,10 @@ foreach ($assigns as $assign) {
     $assign['value'] = str_replace(',', '.', floatval($assign['value']));
     if (empty($assign['value'])) {
         continue;
+    }
+
+    if (!isset($assign['taxcategory'])) {
+        $assign['taxcategory'] = 0;
     }
 
     $linktechnology = isset($assignment_linktechnologies[$assign['id']]) ? $assignment_linktechnologies[$assign['id']]['technology'] : null;

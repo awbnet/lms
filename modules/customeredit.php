@@ -141,6 +141,14 @@ if (!isset($_POST['xjxfun'])) {
                     $customerdata['addresses'][ $k ]['show'] = true;
                 }
 
+                $countryCode = null;
+                if (!empty($v['location_country_id'])) {
+                    $countryCode = $LMS->getCountryCodeById($v['location_country_id']);
+                    if ($v['location_address_type'] == BILLING_ADDRESS) {
+                        $billingCountryCode = $countryCode;
+                    }
+                }
+
                 if (!ConfigHelper::checkPrivilege('full_access') && ConfigHelper::checkConfig('phpui.teryt_required')
                     && !empty($v['location_city_name']) && ($v['location_country_id'] == 2 || empty($v['location_country_id']))
                     && (!isset($v['teryt']) || empty($v['location_city']))) {
@@ -148,10 +156,15 @@ if (!isset($_POST['xjxfun'])) {
                     $customerdata['addresses'][ $k ]['show'] = true;
                 }
 
-                if ($v['location_zip'] && !Utils::checkZip($v['location_zip'], $v['location_country_id'])) {
+                Localisation::setSystemLanguage($countryCode);
+                if ($v['location_zip'] && !check_zip($v['location_zip'])) {
                     $error['customerdata[addresses][' . $k . '][location_zip]'] = trans('Incorrect ZIP code!');
                     $customerdata['addresses'][ $k ]['show'] = true;
                 }
+            }
+
+            if (isset($billingCountryCode)) {
+                Localisation::setSystemLanguage($billingCountryCode);
             }
 
             if ($customerdata['ten'] !='') {
@@ -222,6 +235,8 @@ if (!isset($_POST['xjxfun'])) {
                 $warning['icn'] = trans('Incorrect Identity Card Number! If you are sure you want to accept, then click "Submit" again.');
                 $icnwarning = 1;
             }
+
+            Localisation::resetSystemLanguage();
 
             if ($customerdata['pin'] == '') {
                 $error['pin'] = trans('PIN code is required!');
@@ -439,8 +454,6 @@ $customerinfo = $hook_data['customerinfo'];
 $SMARTY->assign('xajax', $LMS->RunXajax());
 $SMARTY->assign(compact('pin_min_size', 'pin_max_size', 'pin_allowed_characters'));
 $SMARTY->assign('customerinfo', $customerinfo);
-$SMARTY->assign('cstateslist', $LMS->GetCountryStates());
-$SMARTY->assign('countrieslist', $LMS->GetCountries());
 $SMARTY->assign('divisions', $LMS->GetDivisions());
 $SMARTY->assign('recover', ($action == 'recover' ? 1 : 0));
 $SMARTY->assign('customeredit_sortable_order', $SESSION->get_persistent_setting('customeredit-sortable-order'));
