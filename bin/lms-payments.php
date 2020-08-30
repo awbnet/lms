@@ -4,7 +4,7 @@
 /*
  * LMS version 1.11-git
  *
- *  (C) Copyright 2001-2019 LMS Developers
+ *  (C) Copyright 2001-2020 LMS Developers
  *
  *  Please, see the doc/AUTHORS for more information about authors!
  *
@@ -34,20 +34,40 @@
 ini_set('error_reporting', E_ALL&~E_NOTICE);
 
 $parameters = array(
-    'C:' => 'config-file:',
-    'q' => 'quiet',
-    'h' => 'help',
-    'v' => 'version',
-    'f:' => 'fakedate:',
+    'config-file:' => 'C:',
+    'quiet' => 'q',
+    'help' => 'h',
+    'version' => 'v',
+    'fakedate:' => 'f:',
+    'customerid:' => null,
+    'customergroups:' => 'g:',
 );
 
-foreach ($parameters as $key => $val) {
-    $val = preg_replace('/:/', '', $val);
-    $newkey = preg_replace('/:/', '', $key);
-    $short_to_longs[$newkey] = $val;
+$long_to_shorts = array();
+foreach ($parameters as $long => $short) {
+    $long = str_replace(':', '', $long);
+    if (isset($short)) {
+        $short = str_replace(':', '', $short);
+    }
+    $long_to_shorts[$long] = $short;
 }
-$options = getopt(implode('', array_keys($parameters)), $parameters);
-foreach ($short_to_longs as $short => $long) {
+
+$options = getopt(
+    implode(
+        '',
+        array_filter(
+            array_values($parameters),
+            function ($value) {
+                return isset($value);
+            }
+        )
+    ),
+    array_keys($parameters)
+);
+
+foreach (array_flip(array_filter($long_to_shorts, function ($value) {
+    return isset($value);
+})) as $short => $long) {
     if (array_key_exists($short, $options)) {
         $options[$long] = $options[$short];
         unset($options[$short]);
@@ -57,7 +77,7 @@ foreach ($short_to_longs as $short => $long) {
 if (array_key_exists('version', $options)) {
     print <<<EOF
 lms-payments.php
-(C) 2001-2019 LMS Developers
+(C) 2001-2020 LMS Developers
 
 EOF;
     exit(0);
@@ -66,13 +86,17 @@ EOF;
 if (array_key_exists('help', $options)) {
     print <<<EOF
 lms-payments.php
-(C) 2001-2019 LMS Developers
+(C) 2001-2020 LMS Developers
 
 -C, --config-file=/etc/lms/lms.ini      alternate config file (default: /etc/lms/lms.ini);
 -h, --help                      print this help and exit;
 -v, --version                   print version info and exit;
 -q, --quiet                     suppress any output, except errors;
--f, --fakedate=YYYY/MM/DD       override system date
+-f, --fakedate=YYYY/MM/DD       override system date;
+    --customerid=<id>           limit assignments to to specifed customer
+-g, --customergroups=<group1,group2,...>
+                                allow to specify customer groups to which notified customers
+                                should be assigned
 
 EOF;
     exit(0);
@@ -82,7 +106,7 @@ $quiet = array_key_exists('quiet', $options);
 if (!$quiet) {
     print <<<EOF
 lms-payments.php
-(C) 2001-2019 LMS Developers
+(C) 2001-2020 LMS Developers
 
 EOF;
 }
@@ -156,7 +180,9 @@ $deadline = ConfigHelper::getConfig('payments.deadline', 14);
 $sdate_next = ConfigHelper::checkConfig('payments.saledate_next_month');
 $paytype = ConfigHelper::getConfig('payments.paytype', 2); // TRANSFER
 $comment = ConfigHelper::getConfig('payments.comment', "Tariff %tariff - %attribute subscription for period %period");
+$backward_comment = ConfigHelper::getConfig('payments.backward_comment', $comment);
 $s_comment = ConfigHelper::getConfig('payments.settlement_comment', $comment);
+$s_backward_comment = ConfigHelper::getConfig('payments.settlement_backward_comment', $s_comment);
 $suspension_description = ConfigHelper::getConfig('payments.suspension_description', '');
 $suspension_percentage = ConfigHelper::getConfig('finances.suspension_percentage', 0);
 $unit_name = trans(ConfigHelper::getConfig('payments.default_unit_name'));
@@ -165,6 +191,7 @@ $proforma_generates_commitment = ConfigHelper::checkConfig('phpui.proforma_invoi
 $delete_old_assignments_after_days = intval(ConfigHelper::getConfig('payments.delete_old_assignments_after_days', 30));
 $prefer_settlement_only = ConfigHelper::checkConfig('payments.prefer_settlement_only');
 $prefer_netto = ConfigHelper::checkConfig('payments.prefer_netto');
+$customergroups = ConfigHelper::getConfig('payments.customergroups', '', true);
 
 function localtime2()
 {
@@ -177,7 +204,8 @@ function localtime2()
     }
 }
 
-$fakedate = (array_key_exists('fakedate', $options) ? $options['fakedate'] : null);
+$fakedate = isset($options['fakedate']) ? $options['fakedate'] : null;
+$customerid = isset($options['customerid']) && intval($options['customerid']) ? $options['customerid'] : null;
 
 $currtime = strftime("%s", localtime2());
 $month = intval(strftime("%m", localtime2()));
@@ -232,16 +260,6 @@ $forward_aligned_periods = array(
     DISPOSABLE => $forward_periods[DISPOSABLE],
 );
 
-$forward_aligned_partial_start_periods = array(
-    DAILY      => $forward_periods[DAILY],
-    WEEKLY     => $forward_periods[WEEKLY],
-    MONTHLY    => strftime($date_format, mktime(12, 0, 0, $month, $dom, $year)).' - '.strftime($date_format, mktime(12, 0, 0, $month+1, 0, $year)),
-    QUARTERLY  => strftime($date_format, mktime(12, 0, 0, $month, $dom, $year)).' - '.strftime($date_format, mktime(12, 0, 0, $month+3, 0, $year)),
-    HALFYEARLY => strftime($date_format, mktime(12, 0, 0, $month, $dom, $year)).' - '.strftime($date_format, mktime(12, 0, 0, $month+6, 0, $year)),
-    YEARLY     => strftime($date_format, mktime(12, 0, 0, $month, $dom, $year)).' - '.strftime($date_format, mktime(12, 0, 0, $month, 0, $year+1)),
-    DISPOSABLE => $forward_periods[DISPOSABLE],
-);
-
 $backward_periods = array(
     DAILY      => strftime($date_format, mktime(12, 0, 0, $month, $dom-1, $year)),
     WEEKLY     => strftime($date_format, mktime(12, 0, 0, $month, $dom-7, $year))  .' - '.strftime($date_format, mktime(12, 0, 0, $month, $dom-1, $year)),
@@ -268,6 +286,7 @@ $backward_aligned_periods = array(
 // assignment is made not January, the 1st:
 
 $current_month = strftime($date_format, mktime(12, 0, 0, $month, 1, $year))." - ".strftime($date_format, mktime(12, 0, 0, $month + 1, 0, $year));
+$previous_month = strftime($date_format, mktime(12, 0, 0, $month - 1, 1, $year))." - ".strftime($date_format, mktime(12, 0, 0, $month, 0, $year));
 $current_period = strftime("%m/%Y", mktime(12, 0, 0, $month, 1, $year));
 $next_period = strftime("%m/%Y", mktime(12, 0, 0, $month + 1, 1, $year));
 $prev_period = strftime("%m/%Y", mktime(12, 0, 0, $month - 1, 1, $year));
@@ -354,21 +373,37 @@ if (!empty($results)) {
 }
 
 // prepare customergroups in sql query
-$customergroups = " AND EXISTS (SELECT 1 FROM customergroups g, customerassignments ca 
-	WHERE c.id = ca.customerid 
-	AND g.id = ca.customergroupid 
-	AND (%groups)) ";
-$groupnames = ConfigHelper::getConfig('payments.customergroups');
-$groupsql = "";
-$groups = preg_split("/[[:blank:]]+/", $groupnames, -1, PREG_SPLIT_NO_EMPTY);
-foreach ($groups as $group) {
-    if (!empty($groupsql)) {
-        $groupsql .= " OR ";
-    }
-    $groupsql .= "UPPER(g.name) = UPPER('".$group."')";
+if (isset($options['customergroups'])) {
+    $customergroups = $options['customergroups'];
 }
-if (!empty($groupsql)) {
-    $customergroups = preg_replace("/\%groups/", $groupsql, $customergroups);
+if (!empty($customergroups)) {
+    $ORs = preg_split("/([\s]+|[\s]*,[\s]*)/", mb_strtoupper($customergroups), -1, PREG_SPLIT_NO_EMPTY);
+    $customergroup_ORs = array();
+    foreach ($ORs as $OR) {
+        $ANDs = preg_split("/([\s]*\+[\s]*)/", $OR, -1, PREG_SPLIT_NO_EMPTY);
+        $customergroup_ANDs_regular = array();
+        $customergroup_ANDs_inversed = array();
+        foreach ($ANDs as $AND) {
+            if (strpos($AND, '!') === false) {
+                $customergroup_ANDs_regular[] = $AND;
+            } else {
+                $customergroup_ANDs_inversed[] = substr($AND, 1);
+            }
+        }
+        $customergroup_ORs[] = '('
+            . (empty($customergroup_ANDs_regular) ? '1 = 1' : "EXISTS (SELECT COUNT(*) FROM customergroups
+                JOIN customerassignments ON customerassignments.customergroupid = customergroups.id
+                WHERE customerassignments.customerid = %customerid_alias%
+                AND UPPER(customergroups.name) IN ('" . implode("', '", $customergroup_ANDs_regular) . "')
+                HAVING COUNT(*) = " . count($customergroup_ANDs_regular) . ')')
+            . (empty($customergroup_ANDs_inversed) ? '' : " AND NOT EXISTS (SELECT COUNT(*) FROM customergroups
+                JOIN customerassignments ON customerassignments.customergroupid = customergroups.id
+                WHERE customerassignments.customerid = %customerid_alias%
+                AND UPPER(customergroups.name) IN ('" . implode("', '", $customergroup_ANDs_inversed) . "')
+                HAVING COUNT(*) > 0)")
+            . ')';
+    }
+    $customergroups = ' AND (' . implode(' OR ', $customergroup_ORs) . ')';
 }
 
 // invoice auto-closes
@@ -379,7 +414,7 @@ if ($check_invoices) {
 			SELECT c.customerid
 			FROM cash c
 			WHERE c.time <= ?NOW?
-				" . (!empty($groupnames) ? $customergroups : '') . "
+				" . ($customergroups ? str_replace('%customerid_alias%', 'c.customerid', $customergroups) : '') . "
 			GROUP BY c.customerid
 			HAVING SUM(c.value * c.currencyvalue) >= 0
 		) AND type IN (?, ?, ?)
@@ -414,7 +449,7 @@ if (!empty($assigns)) {
 
 // let's go, fetch *ALL* assignments in given day
 $query = "SELECT a.id, a.tariffid, a.liabilityid, a.customerid, a.recipient_address_id,
-		a.period, a.at, a.suspended, a.settlement, a.datefrom, a.dateto, a.pdiscount, a.vdiscount,
+		a.period, a.backwardperiod, a.at, a.suspended, a.settlement, a.datefrom, a.dateto, a.pdiscount, a.vdiscount,
 		a.invoice, a.separatedocument,
 		(CASE WHEN c.type = ? THEN 0 ELSE (CASE WHEN a.liabilityid IS NULL THEN t.splitpayment ELSE l.splitpayment END) END) AS splitpayment,
 		(CASE WHEN a.liabilityid IS NULL THEN t.taxcategory ELSE l.taxcategory END) AS taxcategory,
@@ -446,7 +481,7 @@ $query = "SELECT a.id, a.tariffid, a.liabilityid, a.customerid, a.recipient_addr
 	LEFT JOIN tariffs t ON (a.tariffid = t.id)
 	LEFT JOIN liabilities l ON (a.liabilityid = l.id)
 	LEFT JOIN divisions d ON (d.id = c.divisionid)
-	WHERE (c.status = ? OR c.status = ?)
+	WHERE " . ($customerid ? 'c.id = ' . $customerid . ' AND ' : '') . "(c.status = ? OR c.status = ?)
 		AND a.commited = 1
 		AND ((a.period = ? AND at = ?)
 			OR ((a.period = ?
@@ -456,7 +491,7 @@ $query = "SELECT a.id, a.tariffid, a.liabilityid, a.customerid, a.recipient_addr
 			OR (a.period = ? AND at = ?)
 			OR (a.period = ? AND at = ?))
 			AND a.datefrom <= ? AND (a.dateto > ? OR a.dateto = 0)))"
-        .(!empty($groupnames) ? $customergroups : "")
+        . ($customergroups ? str_replace('%customerid_alias%', 'c.id', $customergroups) : '')
     ." ORDER BY a.customerid, a.recipient_address_id, a.invoice,  a.paytype, a.numberplanid, a.separatedocument, currency, value DESC, a.id";
 $services = $DB->GetAll($query, array(CTYPES_PRIVATE, CSTATUS_CONNECTED, CSTATUS_DEBT_COLLECTION,
     DISPOSABLE, $today, DAILY, WEEKLY, $weekday, MONTHLY, $last_dom ? 0 : $dom, QUARTERLY, $quarter, HALFYEARLY, $halfyear, YEARLY, $yearday,
@@ -465,7 +500,7 @@ $services = $DB->GetAll($query, array(CTYPES_PRIVATE, CSTATUS_CONNECTED, CSTATUS
 $billing_invoice_description = ConfigHelper::getConfig('payments.billing_invoice_description', 'Phone calls between %backward_periods (for %phones)');
 
 $query = "SELECT
-			a.id, a.tariffid, a.customerid, a.period, a.at, a.suspended, a.settlement, a.datefrom,
+			a.id, a.tariffid, a.customerid, a.period, a.backwardperiod, a.at, a.suspended, a.settlement, a.datefrom,
 			0 AS pdiscount, 0 AS vdiscount, a.invoice, a.separatedocument,
 			(CASE WHEN c.type = ? THEN 0 ELSE t.splitpayment END) AS splitpayment,
 			t.taxcategory AS taxcategory,
@@ -518,7 +553,7 @@ $query = "SELECT
 			) voipphones ON voipphones.assignment_id = a.id
 			LEFT JOIN tariffs t ON (a.tariffid = t.id)
 			LEFT JOIN divisions d ON (d.id = c.divisionid)
-	    WHERE
+	    WHERE " . ($customerid ? 'c.id = ' . $customerid . ' AND ' : '') . "
 	      (c.status  = ? OR c.status = ?) AND
 	      t.type = ? AND
 	      a.commited = 1 AND
@@ -531,7 +566,7 @@ $query = "SELECT
 		  (a.period  = ? AND at = ?)) AND
 		   a.datefrom <= ? AND
 		  (a.dateto > ? OR a.dateto = 0)))"
-        .(!empty($groupnames) ? $customergroups : "")
+        . ($customergroups ? str_replace('%customerid_alias%', 'c.id', $customergroups) : '')
     ." ORDER BY a.customerid, a.recipient_address_id, a.invoice, a.paytype, a.numberplanid, a.separatedocument, currency, voipcost.value DESC, a.id";
 
 $billings = $DB->GetAll($query, array(CTYPES_PRIVATE, 1, CSTATUS_CONNECTED, CSTATUS_DEBT_COLLECTION, SERVICE_PHONE,
@@ -589,7 +624,7 @@ $dayend = $daystart + 86399;
 
 $documents = $DB->GetAll(
     'SELECT d.id, d.currency FROM documents d
-    WHERE ((d.type IN (?, ?, ?) AND sdate >= ? AND sdate <= ?)
+    WHERE ' . ($customerid ? 'd.customerid = ' . $customerid . ' AND ' : '') . '((d.type IN (?, ?, ?) AND sdate >= ? AND sdate <= ?)
         OR (d.type IN (?, ?) AND cdate >= ? AND cdate <= ?))
         AND currency <> ?',
     array(
@@ -643,7 +678,7 @@ if (!empty($documents)) {
 
 $cashes = $DB->GetAll(
     'SELECT id, currency FROM cash
-    WHERE currency <> ? AND time >= ? AND time <= ?',
+    WHERE ' . ($customerid ? 'customerid = ' . $customerid . ' AND ' : '') . 'currency <> ? AND time >= ? AND time <= ?',
     array(
         Localisation::getCurrentCurrency(),
         $daystart,
@@ -926,7 +961,11 @@ foreach ($assigns as $assign) {
     if ($assign['liabilityid']) {
         $desc = $assign['name'];
     } else {
-        $desc = $comment;
+        if (empty($assign['backwardperiod'])) {
+            $desc = $comment;
+        } else {
+            $desc = $backward_comment;
+        }
     }
 
     $desc = preg_replace("/\%type/", $assign['tarifftype'] != SERVICE_OTHER ? $SERVICETYPES[$assign['tarifftype']] : '', $desc);
@@ -952,28 +991,42 @@ foreach ($assigns as $assign) {
     $desc = preg_replace("/\%period/", $forward_periods[$p], $desc);
     $desc = preg_replace("/\%aligned_period/", $forward_aligned_periods[$p], $desc);
 
-    $dayfrom = explode("/", date(preg_replace("/\%/", "", $date_format), $assign['datefrom']));
-    if ($assign['dateto']) {
-        $dayto = explode("/", date(preg_replace("/\%/", "", $date_format), $assign['dateto']));
-        $dayto_nextday = explode("/", date(preg_replace("/\%/", "", $date_format), $assign['dateto']+1));
-    }
-    if (intval($dayfrom[2]) != 1) {
-        $desc = preg_replace("/\%aligned_partial_period/", $forward_aligned_partial_start_periods[$p], $desc);
-    } else {
-        if (isset($dayto) && isset($dayto_nextday) && intval($dayto_nextday[2]) != 1) {
-            $forward_aligned_partial_end_periods = array(
-                DAILY      => $forward_periods[DAILY],
-                WEEKLY     => $forward_periods[WEEKLY],
-                MONTHLY    => strftime($date_format, mktime(12, 0, 0, $month, 1, $year)).' - '.strftime($date_format, mktime(12, 0, 0, $month, intval($dayto[2]), $year)),
-                QUARTERLY  => strftime($date_format, mktime(12, 0, 0, $month, 1, $year)).' - '.strftime($date_format, mktime(12, 0, 0, $month+2, intval($dayto[2]), $year)),
-                HALFYEARLY => strftime($date_format, mktime(12, 0, 0, $month, 1, $year)).' - '.strftime($date_format, mktime(12, 0, 0, $month+5, intval($dayto[2]), $year)),
-                YEARLY     => strftime($date_format, mktime(12, 0, 0, $month, 1, $year)).' - '.strftime($date_format, mktime(12, 0, 0, $month, intval($dayto[2]), $year+1)),
+    if (strpos($comment, "%aligned_partial_period") !== false) {
+        if ($assign['datefrom']) {
+            $datefrom = explode("/", date(preg_replace("/\%/", "", $date_format), $assign['datefrom']));
+        }
+        if ($assign['dateto']) {
+            $dateto = explode("/", date(preg_replace("/\%/", "", $date_format), $assign['dateto']));
+            $dateto_nextday = explode("/", date(preg_replace("/\%/", "", $date_format), $assign['dateto'] + 1));
+        }
+        if (isset($datefrom) && intval($datefrom[2]) != 1 && intval($datefrom[1]) == intval($month) && intval($datefrom[0]) == intval($year)) {
+            $first_aligned_partial_period = array(
+                DAILY => $forward_periods[DAILY],
+                WEEKLY => $forward_periods[WEEKLY],
+                MONTHLY => strftime($date_format, mktime(12, 0, 0, $month, $datefrom[2], $year)) . ' - ' . strftime($date_format, mktime(12, 0, 0, $month + 1, 0, $year)),
+                QUARTERLY => strftime($date_format, mktime(12, 0, 0, $month, $datefrom[2], $year)) . ' - ' . strftime($date_format, mktime(12, 0, 0, $month + 3, 0, $year)),
+                HALFYEARLY => strftime($date_format, mktime(12, 0, 0, $month, $datefrom[2], $year)) . ' - ' . strftime($date_format, mktime(12, 0, 0, $month + 6, 0, $year)),
+                YEARLY => strftime($date_format, mktime(12, 0, 0, $month, $datefrom[2], $year)) . ' - ' . strftime($date_format, mktime(12, 0, 0, $month, 0, $year + 1)),
                 DISPOSABLE => $forward_periods[DISPOSABLE],
             );
-            $desc = preg_replace("/\%aligned_partial_period/", $forward_aligned_partial_end_periods[$p], $desc);
-            unset($forward_aligned_partial_end_periods);
+            $desc = preg_replace("/\%aligned_partial_period/", $first_aligned_partial_period[$p], $desc);
+            unset($first_aligned_partial_period);
         } else {
-            $desc = preg_replace("/\%aligned_partial_period/", $forward_aligned_periods[$p], $desc);
+            if (isset($dateto) && isset($dateto_nextday) && intval($dateto_nextday[2]) != 1 && intval($dateto[1]) == intval($month) && intval($dateto[0]) == intval($year)) {
+                $last_aligned_partial_period = array(
+                    DAILY => $forward_periods[DAILY],
+                    WEEKLY => $forward_periods[WEEKLY],
+                    MONTHLY => strftime($date_format, mktime(12, 0, 0, $month, 1, $year)) . ' - ' . strftime($date_format, mktime(12, 0, 0, $month, intval($dateto[2]), $year)),
+                    QUARTERLY => strftime($date_format, mktime(12, 0, 0, $month, 1, $year)) . ' - ' . strftime($date_format, mktime(12, 0, 0, $month + 2, intval($dateto[2]), $year)),
+                    HALFYEARLY => strftime($date_format, mktime(12, 0, 0, $month, 1, $year)) . ' - ' . strftime($date_format, mktime(12, 0, 0, $month + 5, intval($dateto[2]), $year)),
+                    YEARLY => strftime($date_format, mktime(12, 0, 0, $month, 1, $year)) . ' - ' . strftime($date_format, mktime(12, 0, 0, $month, intval($dateto[2]), $year + 1)),
+                    DISPOSABLE => $forward_periods[DISPOSABLE],
+                );
+                $desc = preg_replace("/\%aligned_partial_period/", $last_aligned_partial_period[$p], $desc);
+                unset($last_aligned_partial_period);
+            } else {
+                $desc = preg_replace("/\%aligned_partial_period/", $forward_aligned_periods[$p], $desc);
+            }
         }
     }
 
@@ -1341,7 +1394,11 @@ foreach ($assigns as $assign) {
             if (floatval($value)) {
                 //print "value: $val diffdays: $diffdays alldays: $alldays settl_value: $value" . PHP_EOL;
 
-                $sdesc = $s_comment;
+                if (empty($assign['backwardperiod'])) {
+                    $sdesc = $s_comment;
+                } else {
+                    $sdesc = $s_backward_comment;
+                }
                 $sdesc = preg_replace("/\%type/", $assign['tarifftype'] != SERVICE_OTHER ? $SERVICETYPES[$assign['tarifftype']] : '', $sdesc);
                 $sdesc = preg_replace("/\%tariff/", $assign['name'], $sdesc);
                 $sdesc = preg_replace("/\%attribute/", $assign['attribute'], $sdesc);
@@ -1457,11 +1514,11 @@ foreach ($assigns as $assign) {
 if ($check_invoices) {
     $DB->Execute(
         "UPDATE documents SET closed = 1
-		WHERE customerid IN (
+		WHERE " . ($customerid ? 'customerid = ' . $customerid . ' AND ' : '') . "customerid IN (
 			SELECT c.customerid
 			FROM cash c
 			WHERE c.time <= ?NOW?
-				" . (!empty($groupnames) ? $customergroups : '') . "
+				" . ($customergroups ? str_replace('%customerid_alias%', 'c.customerid', $customergroups) : '') . "
 			GROUP BY c.customerid
 			HAVING SUM(c.value * c.currencyvalue) >= 0
 		) AND type IN (?, ?, ?)
@@ -1476,7 +1533,7 @@ if ($delete_old_assignments_after_days) {
     $DB->Execute(
         "DELETE FROM liabilities WHERE id IN (
 			SELECT liabilityid FROM assignments
-				WHERE ((dateto <> 0 AND dateto < $today - ? * 86400
+				WHERE " . ($customerid ? 'customerid = ' . $customerid . ' AND ' : '') . "((dateto <> 0 AND dateto < $today - ? * 86400
 						OR (period = ? AND at < $today - ? * 86400))
 					AND liabilityid IS NOT NULL)
 		)",
@@ -1484,8 +1541,8 @@ if ($delete_old_assignments_after_days) {
     );
     $DB->Execute(
         "DELETE FROM assignments
-		WHERE (dateto <> 0 AND dateto < $today - ? * 86400)
-			OR (period = ? AND at < $today - ? * 86400)",
+		WHERE " . ($customerid ? 'customerid = ' . $customerid . ' AND ' : '') . "((dateto <> 0 AND dateto < $today - ? * 86400)
+			OR (period = ? AND at < $today - ? * 86400))",
         array($delete_old_assignments_after_days, DISPOSABLE, $delete_old_assignments_after_days)
     );
 }

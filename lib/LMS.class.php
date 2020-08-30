@@ -411,10 +411,10 @@ class LMS
         return $manager->getUserNamesIndexedById();
     }
 
-    public function GetUserList()
+    public function GetUserList($params = array())
     {
         $manager = $this->getUserManager();
-        return $manager->getUserList();
+        return $manager->getUserList($params);
     }
 
     public function GetUserIDByLogin($login)
@@ -769,6 +769,30 @@ class LMS
         return $manager->removeCustomerContactFlags($customerid, $type, $flags);
     }
 
+    public function getCustomerNotes($cid)
+    {
+        $manager = $this->getCustomerManager();
+        return $manager->getCustomerNotes($cid);
+    }
+
+    public function getCustomerNote($id)
+    {
+        $manager = $this->getCustomerManager();
+        return $manager->getCustomerNote($id);
+    }
+
+    public function addCustomerNote($params)
+    {
+        $manager = $this->getCustomerManager();
+        return $manager->addCustomerNote($params);
+    }
+
+    public function delCustomerNote($id)
+    {
+        $manager = $this->getCustomerManager();
+        return $manager->delCustomerNote($id);
+    }
+
     /*
      * Customer groups
      */
@@ -873,6 +897,18 @@ class LMS
     {
         $manager = $this->getCustomerGroupManager();
         return $manager->GetCustomerWithoutGroupNames($groupid, $network);
+    }
+
+    public function getAllCustomerGroups()
+    {
+        $manager = $this->getCustomerGroupManager();
+        return $manager->getAllCustomerGroups();
+    }
+
+    public function getExcludedCustomerGroups($userid)
+    {
+        $manager = $this->getCustomerGroupManager();
+        return $manager->getExcludedCustomerGroups($userid);
     }
 
     /*
@@ -2475,13 +2511,16 @@ class LMS
                     $this->mail_object->SMTPAuth = true;
                     $this->mail_object->AuthType = $auth_type;
                 }
-                $this->mail_object->SMTPSecure = (!isset($smtp_options['secure'])
-                    ? ConfigHelper::getConfig('mail.smtp_secure', '', true)
-                    : $smtp_options['secure']);
-                if ($this->mail_object->SMTPSecure == 'false') {
-                    $this->mail_object->SMTPSecure = '';
-                    $this->mail_object->SMTPAutoTLS = false;
-                }
+            } else {
+                $this->mail_object->SMTPAuth = false;
+            }
+
+            $this->mail_object->SMTPSecure = (!isset($smtp_options['secure'])
+                ? ConfigHelper::getConfig('mail.smtp_secure', '', true)
+                : $smtp_options['secure']);
+            if ($this->mail_object->SMTPSecure == 'false') {
+                $this->mail_object->SMTPSecure = '';
+                $this->mail_object->SMTPAutoTLS = false;
             }
 
             $this->mail_object->SMTPOptions = array(
@@ -4135,6 +4174,12 @@ class LMS
         return $manager->UserassignmentAdd($userassignmentdata);
     }
 
+    public function getUserAssignments($userid)
+    {
+        $manager = $this->getUserGroupManager();
+        return $manager->getUserAssignments($userid);
+    }
+
     public function UsergroupDelete($id)
     {
         $manager = $this->getUserGroupManager();
@@ -4147,10 +4192,10 @@ class LMS
         return $manager->UsergroupUpdate($usergroupdata);
     }
 
-    public function UsergroupGetAll()
+    public function getAllUserGroups()
     {
         $manager = $this->getUserGroupManager();
-        return $manager->UsergroupGetAll();
+        return $manager->getAllUserGroups();
     }
 
     /**
@@ -4279,6 +4324,12 @@ class LMS
         return $manager->GetDivisions($params);
     }
 
+    public function getDivisionList($params = array())
+    {
+        $manager = $this->getDivisionManager();
+        return $manager->getDivisionList($params);
+    }
+
     public function AddDivision($division)
     {
         $manager = $this->getDivisionManager();
@@ -4295,6 +4346,12 @@ class LMS
     {
         $manager = $this->getDivisionManager();
         return $manager->UpdateDivision($division);
+    }
+
+    public function CheckDivisionsAccess($divisions)
+    {
+        $manager = $this->getDivisionManager();
+        return $manager->CheckDivisionsAccess($divisions);
     }
 
     /*

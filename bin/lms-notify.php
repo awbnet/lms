@@ -28,25 +28,44 @@
 ini_set('error_reporting', E_ALL & ~E_NOTICE);
 
 $parameters = array(
-    'C:' => 'config-file:',
-    'q' => 'quiet',
-    'h' => 'help',
-    'v' => 'version',
-    'd' => 'debug',
-    'f:' => 'fakedate:',
-    't:' => 'type:',
-    's:' => 'section:',
-    'c:' => 'channel:',
-    'a:' => 'actions:',
+    'config-file:' => 'C:',
+    'quiet' => 'q',
+    'help' => 'h',
+    'version' => 'v',
+    'debug' => 'd',
+    'fakedate:' => 'f:',
+    'type:' => 't:',
+    'section:' => 's:',
+    'channel:' => 'c:',
+    'actions:' => 'a:',
+    'customergroups:' => 'g:',
 );
 
-foreach ($parameters as $key => $val) {
-    $val = preg_replace('/:/', '', $val);
-    $newkey = preg_replace('/:/', '', $key);
-    $short_to_longs[$newkey] = $val;
+$long_to_shorts = array();
+foreach ($parameters as $long => $short) {
+    $long = str_replace(':', '', $long);
+    if (isset($short)) {
+        $short = str_replace(':', '', $short);
+    }
+    $long_to_shorts[$long] = $short;
 }
-$options = getopt(implode('', array_keys($parameters)), $parameters);
-foreach ($short_to_longs as $short => $long) {
+
+$options = getopt(
+    implode(
+        '',
+        array_filter(
+            array_values($parameters),
+            function ($value) {
+                return isset($value);
+            }
+        )
+    ),
+    array_keys($parameters)
+);
+
+foreach (array_flip(array_filter($long_to_shorts, function ($value) {
+    return isset($value);
+})) as $short => $long) {
     if (array_key_exists($short, $options)) {
         $options[$long] = $options[$short];
         unset($options[$short]);
@@ -56,7 +75,7 @@ foreach ($short_to_longs as $short => $long) {
 if (array_key_exists('version', $options)) {
     print <<<EOF
 lms-notify.php
-(C) 2001-2017 LMS Developers
+(C) 2001-2020 LMS Developers
 
 EOF;
     exit(0);
@@ -65,7 +84,7 @@ EOF;
 if (array_key_exists('help', $options)) {
     print <<<EOF
 lms-notify.php
-(C) 2001-2017 LMS Developers
+(C) 2001-2020 LMS Developers
 
 -C, --config-file=/etc/lms/lms.ini      alternate config file (default: /etc/lms/lms.ini);
 -h, --help                      print this help and exit;
@@ -82,6 +101,9 @@ lms-notify.php
 -a, --actions=<node-access,customer-status,assignment-invoice,all-assignment-suspension>
                                 action names which should be performed for
                                 virtual block/unblock channels
+-g, --customergroups=<group1,group2,...>
+                                allow to specify customer groups to which notified customers
+                                should be assigned
 
 EOF;
     exit(0);
@@ -91,7 +113,7 @@ $quiet = array_key_exists('quiet', $options);
 if (!$quiet) {
     print <<<EOF
 lms-notify.php
-(C) 2001-2017 LMS Developers
+(C) 2001-2020 LMS Developers
 
 EOF;
 }
@@ -217,6 +239,8 @@ $format = ConfigHelper::getConfig($config_section . '.format', 'text');
 $mail_format = ConfigHelper::getConfig($config_section . '.mail_format', $format);
 $content_type = $format == 'html' ? 'text/html' : 'text/plain';
 $mail_content_type = $mail_format == 'html' ? 'text/html' : 'text/plain';
+$customergroups = ConfigHelper::getConfig($config_section . '.customergroups', '', true);
+$ignore_customer_consents = ConfigHelper::checkConfig($config_section . '.ignore_customer_consents');
 
 $content_types = array(
     MSG_MAIL => $mail_content_type,
@@ -251,6 +275,7 @@ foreach (array(
              'income',
              'invoices',
              'notes',
+             'birthday',
              'warnings',
              'messages',
              'timetable'
@@ -332,6 +357,8 @@ function parse_customer_data($data, $row)
         format_bankaccount(bankaccount($row['id'], $row['account'])),
         $data
     );
+    $data = preg_replace('/%name/', $row['name'], $data);
+    $data = preg_replace('/%age/', $row['age'], $data);
     $data = preg_replace("/\%b/", sprintf('%01.2f', $amount), $data);
     $data = preg_replace("/\%totalb/", sprintf('%01.2f', $totalamount), $data);
     $data = preg_replace("/\%date-y/", strftime("%Y"), $data);
@@ -546,6 +573,40 @@ function send_sms_to_user($phone, $data)
     $result = $LMS->SendSMS(str_replace(' ', '', $phone), $data);
 }
 
+// prepare customergroups in sql query
+if (isset($options['customergroups'])) {
+    $customergroups = $options['customergroups'];
+}
+if (!empty($customergroups)) {
+    $ORs = preg_split("/([\s]+|[\s]*,[\s]*)/", mb_strtoupper($customergroups), -1, PREG_SPLIT_NO_EMPTY);
+    $customergroup_ORs = array();
+    foreach ($ORs as $OR) {
+        $ANDs = preg_split("/([\s]*\+[\s]*)/", $OR, -1, PREG_SPLIT_NO_EMPTY);
+        $customergroup_ANDs_regular = array();
+        $customergroup_ANDs_inversed = array();
+        foreach ($ANDs as $AND) {
+            if (strpos($AND, '!') === false) {
+                $customergroup_ANDs_regular[] = $AND;
+            } else {
+                $customergroup_ANDs_inversed[] = substr($AND, 1);
+            }
+        }
+        $customergroup_ORs[] = '('
+            . (empty($customergroup_ANDs_regular) ? '1 = 1' : "EXISTS (SELECT COUNT(*) FROM customergroups
+                JOIN customerassignments ON customerassignments.customergroupid = customergroups.id
+                WHERE customerassignments.customerid = c.id
+                AND UPPER(customergroups.name) IN ('" . implode("', '", $customergroup_ANDs_regular) . "')
+                HAVING COUNT(*) = " . count($customergroup_ANDs_regular) . ')')
+            . (empty($customergroup_ANDs_inversed) ? '' : " AND NOT EXISTS (SELECT COUNT(*) FROM customergroups
+                JOIN customerassignments ON customerassignments.customergroupid = customergroups.id
+                WHERE customerassignments.customerid = c.id
+                AND UPPER(customergroups.name) IN ('" . implode("', '", $customergroup_ANDs_inversed) . "')
+                HAVING COUNT(*) > 0)")
+            . ')';
+    }
+    $customergroups = ' AND (' . implode(' OR ', $customergroup_ORs) . ')';
+}
+
 // ------------------------------------------------------------------------
 // ACTIONS
 // ------------------------------------------------------------------------
@@ -650,7 +711,7 @@ if (empty($types) || in_array('documents', $types)) {
     $customers = $DB->GetAll(
         "SELECT DISTINCT c.id, c.pin, c.lastname, c.name,
             b.balance, m.email, x.phone
-        FROM customers c
+        FROM customeraddressview c
         LEFT JOIN (
             SELECT customerid, SUM(value * currencyvalue) AS balance FROM cash
             GROUP BY customerid
@@ -661,15 +722,16 @@ if (empty($types) || in_array('documents', $types)) {
             FROM customercontacts
             WHERE (type & ?) = ?
             GROUP BY customerid
-        ) m ON (m.customerid = c.id)
+        ) m ON (m.customerid = c.id) " . ($ignore_customer_consents ? '' : 'AND c.mailingnotice = 1') . "
         LEFT JOIN (SELECT " . $DB->GroupConcat('contact') . " AS phone, customerid
             FROM customercontacts
             WHERE (type & ?) = ?
             GROUP BY customerid
-        ) x ON (x.customerid = c.id)
+        ) x ON (x.customerid = c.id) " . ($ignore_customer_consents ? '' : 'AND c.smsnotice = 1') . "
         WHERE d.type IN (?, ?) AND dc.todate >= $daystart + ? * 86400
             AND dc.todate < $daystart + (? + 1) * 86400"
-            . ($notifications['documents']['deleted_customers'] ? '' : ' AND c.deleted = 0'),
+            . ($notifications['documents']['deleted_customers'] ? '' : ' AND c.deleted = 0')
+            . ($customergroups ?: ''),
         array(
             CONTACT_EMAIL | CONTACT_NOTIFICATIONS | CONTACT_DISABLED,
             CONTACT_EMAIL | CONTACT_NOTIFICATIONS,
@@ -781,7 +843,7 @@ if (empty($types) || in_array('contracts', $types)) {
         "SELECT c.id, c.pin, c.lastname, c.name,
             SUM(value * currencyvalue) AS balance, d.dateto AS cdate,
             m.email, x.phone
-        FROM customers c
+        FROM customeraddressview c
         JOIN cash ON (c.id = cash.customerid) "
         . ($expiration_type == 'assignments' ?
             "JOIN (
@@ -801,15 +863,16 @@ if (empty($types) || in_array('contracts', $types)) {
             FROM customercontacts
             WHERE (type & ?) = ?
             GROUP BY customerid
-        ) m ON (m.customerid = c.id)
+        ) m ON (m.customerid = c.id) " . ($ignore_customer_consents ? '' : 'AND c.mailingnotice = 1') . "
         LEFT JOIN (SELECT " . $DB->GroupConcat('contact') . " AS phone, customerid
             FROM customercontacts
             WHERE (type & ?) = ?
             GROUP BY customerid
-        ) x ON (x.customerid = c.id)
+        ) x ON (x.customerid = c.id) " . ($ignore_customer_consents ? '' : 'AND c.smsnotice = 1') . "
         WHERE d.dateto >= $daystart + ? * 86400 AND d.dateto < $daystart + (? + 1) * 86400"
-            . ($notifications['contracts']['deleted_customers'] ? '' : ' AND c.deleted = 0') . "
-        GROUP BY c.id, c.pin, c.lastname, c.name, d.dateto, m.email, x.phone",
+            . ($notifications['contracts']['deleted_customers'] ? '' : ' AND c.deleted = 0')
+            . ($customergroups ?: '')
+        . " GROUP BY c.id, c.pin, c.lastname, c.name, d.dateto, m.email, x.phone",
         array(
             CONTACT_EMAIL | CONTACT_NOTIFICATIONS | CONTACT_DISABLED,
             CONTACT_EMAIL | CONTACT_NOTIFICATIONS,
@@ -919,7 +982,7 @@ if (empty($types) || in_array('debtors', $types)) {
     $customers = $DB->GetAll(
         "SELECT c.id, c.pin, c.lastname, c.name,
             b2.balance AS balance, b.balance AS totalbalance, m.email, x.phone, divisions.account
-        FROM customers c
+        FROM customeraddressview c
         LEFT JOIN divisions ON divisions.id = c.divisionid
         LEFT JOIN (
             SELECT customerid, SUM(value * currencyvalue) AS balance FROM cash GROUP BY customerid
@@ -948,14 +1011,15 @@ if (empty($types) || in_array('debtors', $types)) {
             FROM customercontacts
             WHERE (type & ?) = ?
             GROUP BY customerid
-        ) m ON (m.customerid = c.id)
+        ) m ON (m.customerid = c.id) " . ($ignore_customer_consents ? '' : 'AND c.mailingnotice = 1') . "
         LEFT JOIN (SELECT " . $DB->GroupConcat('contact') . " AS phone, customerid
             FROM customercontacts
             WHERE (type & ?) = ?
             GROUP BY customerid
-        ) x ON (x.customerid = c.id)
+        ) x ON (x.customerid = c.id) " . ($ignore_customer_consents ? '' : 'AND c.smsnotice = 1') . "
         WHERE c.status <> ? AND c.cutoffstop < $currtime AND b2.balance " . ($limit > 0 ? '>' : '<') . " ?"
-            . ($notifications['debtors']['deleted_customers'] ? '' : ' AND c.deleted = 0'),
+            . ($notifications['debtors']['deleted_customers'] ? '' : ' AND c.deleted = 0')
+            . ($customergroups ?: ''),
         array(
             DOC_CNOTE,
             $days,
@@ -1082,7 +1146,7 @@ if (empty($types) || in_array('reminder', $types)) {
         d.number, n.template, d.cdate, d.paytime, m.email, x.phone, divisions.account,
         b2.balance AS balance, b.balance AS totalbalance, v.value, v.currency
         FROM documents d
-        JOIN customers c ON (c.id = d.customerid)
+        JOIN customeraddressview c ON (c.id = d.customerid)
         LEFT JOIN divisions ON divisions.id = c.divisionid
         LEFT JOIN (
             SELECT customerid, SUM(value * currencyvalue) AS balance FROM cash GROUP BY customerid
@@ -1111,12 +1175,12 @@ if (empty($types) || in_array('reminder', $types)) {
             FROM customercontacts
             WHERE (type & ?) = ?
             GROUP BY customerid
-        ) m ON (m.customerid = c.id)
+        ) m ON (m.customerid = c.id) " . ($ignore_customer_consents ? '' : 'AND c.mailingnotice = 1') . "
         LEFT JOIN (SELECT " . $DB->GroupConcat('contact') . " AS phone, customerid
             FROM customercontacts
             WHERE (type & ?) = ?
             GROUP BY customerid
-        ) x ON (x.customerid = c.id)
+        ) x ON (x.customerid = c.id) " . ($ignore_customer_consents ? '' : 'AND c.smsnotice = 1') . "
         JOIN (
             SELECT SUM(value) * -1 AS value, currency, docid
             FROM cash
@@ -1126,7 +1190,8 @@ if (empty($types) || in_array('reminder', $types)) {
         WHERE d.type IN (?, ?, ?) AND d.closed = 0 AND b2.balance < ?
             AND (d.cdate + (d.paytime - ? + 1) * 86400) >= $daystart
             AND (d.cdate + (d.paytime - ? + 1) * 86400) < $dayend"
-            . ($notifications['reminder']['deleted_customers'] ? '' : ' AND c.deleted = 0'),
+            . ($notifications['reminder']['deleted_customers'] ? '' : ' AND c.deleted = 0')
+            . ($customergroups ?: ''),
         array(
             DOC_CNOTE,
             DOC_RECEIPT,
@@ -1265,7 +1330,7 @@ if (empty($types) || in_array('income', $types)) {
         " . $DB->Concat('c.lastname', "' '", 'c.name') . " AS name,
         b2.balance AS balance, b.balance AS totalbalance
         FROM cash
-        JOIN customers c ON c.id = cash.customerid
+        JOIN customeraddressview c ON c.id = cash.customerid
         LEFT JOIN divisions ON divisions.id = c.divisionid
         LEFT JOIN (
             SELECT customerid, SUM(value * currencyvalue) AS balance FROM cash GROUP BY customerid
@@ -1294,14 +1359,15 @@ if (empty($types) || in_array('income', $types)) {
             FROM customercontacts
             WHERE (type & ?) = ?
             GROUP BY customerid
-        ) m ON (m.customerid = c.id)
+        ) m ON (m.customerid = c.id) " . ($ignore_customer_consents ? '' : 'AND c.mailingnotice = 1') . "
         LEFT JOIN (SELECT " . $DB->GroupConcat('contact') . " AS phone, customerid
             FROM customercontacts
             WHERE (type & ?) = ?
             GROUP BY customerid
-        ) x ON (x.customerid = c.id)
+        ) x ON (x.customerid = c.id) " . ($ignore_customer_consents ? '' : 'AND c.smsnotice = 1') . "
         WHERE cash.type = 1 AND cash.value > 0 AND cash.time >= $daystart + (? * 86400) AND cash.time < $daystart + (? + 1) * 86400"
-            . ($notifications['income']['deleted_customers'] ? '' : ' AND c.deleted = 0'),
+            . ($notifications['income']['deleted_customers'] ? '' : ' AND c.deleted = 0')
+            . ($customergroups ?: ''),
         array(
             DOC_CNOTE,
             DOC_RECEIPT,
@@ -1426,12 +1492,12 @@ if (empty($types) || in_array('invoices', $types)) {
             FROM customercontacts
             WHERE (type & ?) = ?
             GROUP BY customerid
-        ) m ON (m.customerid = c.id)
+        ) m ON (m.customerid = c.id) " . ($ignore_customer_consents ? '' : 'AND c.mailingnotice = 1') . "
         LEFT JOIN (SELECT " . $DB->GroupConcat('contact') . " AS phone, customerid
             FROM customercontacts
             WHERE (type & ?) = ?
             GROUP BY customerid
-        ) x ON (x.customerid = c.id)
+        ) x ON (x.customerid = c.id) " . ($ignore_customer_consents ? '' : 'AND c.smsnotice = 1') . "
         JOIN (SELECT SUM(value) * -1 AS value, currency, docid
             FROM cash
             GROUP BY docid, currency
@@ -1443,7 +1509,8 @@ if (empty($types) || in_array('invoices', $types)) {
         ) ca ON (ca.customerid = d.customerid)
         WHERE (c.invoicenotice IS NULL OR c.invoicenotice = 0) AND d.type IN (?, ?, ?)
             AND d.cdate >= ? AND d.cdate <= ?"
-            . ($notifications['invoices']['deleted_customers'] ? '' : ' AND c.deleted = 0'),
+            . ($notifications['invoices']['deleted_customers'] ? '' : ' AND c.deleted = 0')
+            . ($customergroups ?: ''),
         array(
             CONTACT_EMAIL | CONTACT_INVOICES | CONTACT_NOTIFICATIONS | CONTACT_DISABLED,
             CONTACT_EMAIL | CONTACT_INVOICES | CONTACT_NOTIFICATIONS,
@@ -1570,12 +1637,12 @@ if (empty($types) || in_array('notes', $types)) {
             FROM customercontacts
             WHERE (type & ?) = ?
             GROUP BY customerid
-        ) m ON (m.customerid = c.id)
+        ) m ON (m.customerid = c.id) " . ($ignore_customer_consents ? '' : 'AND c.mailingnotice = 1') . "
         LEFT JOIN (SELECT " . $DB->GroupConcat('contact') . " AS phone, customerid
             FROM customercontacts
             WHERE (type & ?) = ?
             GROUP BY customerid
-        ) x ON (x.customerid = c.id)
+        ) x ON (x.customerid = c.id) " . ($ignore_customer_consents ? '' : 'AND c.smsnotice = 1') . "
         JOIN (SELECT SUM(value) * -1 AS value, currency, docid
             FROM cash
             GROUP BY docid, currency
@@ -1587,7 +1654,8 @@ if (empty($types) || in_array('notes', $types)) {
         ) ca ON (ca.customerid = d.customerid)
         WHERE (c.invoicenotice IS NULL OR c.invoicenotice = 0) AND d.type = ?
             AND d.cdate >= ? AND d.cdate <= ?"
-            . ($notifications['notes']['deleted_customers'] ? '' : ' AND c.deleted = 0'),
+            . ($notifications['notes']['deleted_customers'] ? '' : ' AND c.deleted = 0')
+            . ($customergroups ?: ''),
         array(
             CONTACT_EMAIL | CONTACT_NOTIFICATIONS | CONTACT_DISABLED,
             CONTACT_EMAIL | CONTACT_NOTIFICATIONS,
@@ -1698,29 +1766,154 @@ if (empty($types) || in_array('notes', $types)) {
     }
 }
 
+// Customer birthdays
+if (empty($types) || in_array('birthday', $types)) {
+    $cmonth = date('m', $daystart);
+    $customers = $DB->GetAll(
+        "SELECT c.id, c.lastname, c.name, c.ssn, m.email, x.phone
+        FROM customeraddressview c
+        LEFT JOIN (SELECT " . $DB->GroupConcat('contact') . " AS email, customerid
+            FROM customercontacts
+            WHERE (type & ?) = ?
+            GROUP BY customerid
+        ) m ON (m.customerid = c.id) " . ($ignore_customer_consents ? '' : 'AND c.mailingnotice = 1') . "
+        LEFT JOIN (SELECT " . $DB->GroupConcat('contact') . " AS phone, customerid
+            FROM customercontacts
+            WHERE (type & ?) = ?
+            GROUP BY customerid
+        ) x ON (x.customerid = c.id) " . ($ignore_customer_consents ? '' : 'AND c.smsnotice = 1') . "
+        WHERE " . $DB->RegExp('c.ssn', '[0-9]{2}(' . $cmonth . '|' . sprintf('%02d', $cmonth + 20) . ')' . date('d', $daystart) . '[0-9]{5}')
+        . ($notifications['birthday']['deleted_customers'] ? '' : ' AND c.deleted = 0')
+        . ($customergroups ?: ''),
+        array(
+            CONTACT_EMAIL | CONTACT_NOTIFICATIONS | CONTACT_DISABLED,
+            CONTACT_EMAIL | CONTACT_NOTIFICATIONS,
+            CONTACT_MOBILE | CONTACT_NOTIFICATIONS | CONTACT_DISABLED,
+            CONTACT_MOBILE | CONTACT_NOTIFICATIONS,
+        )
+    );
+    if (!empty($customers)) {
+        $notifications['birthday']['customers'] = array();
+        foreach ($customers as $row) {
+            $notifications['birthday']['customers'][] = $row['id'];
+
+            $row['name'] = $row['lastname'] . ' ' . $row['name'];
+            $year = intval(substr($row['ssn'], 0, 2));
+            $month = intval(substr($row['ssn'], 2, 2));
+            $row['age'] = round(date('Y') - (1900 + floor($month / 20) * 100) - $year);
+
+            $message = parse_customer_data($notifications['birthday']['message'], $row);
+            $subject = parse_customer_data($notifications['birthday']['subject'], $row);
+
+            if (empty($row['email'])) {
+                $recipient_mails = null;
+            } else {
+                $recipient_mails = explode(',', $debug_email ?: trim($row['email']));
+            }
+            if (empty($row['phone'])) {
+                $recipient_phones = null;
+            } else {
+                $recipient_phones = explode(',', $debug_phone ?: trim($row['phone']));
+            }
+
+            if (!$quiet) {
+                if (in_array('mail', $channels) && !empty($recipient_mails)) {
+                    foreach ($recipient_mails as $recipient_mail) {
+                        printf(
+                            "[mail/birthday] %s (%04d) age %s: %s" . PHP_EOL,
+                            $row['name'],
+                            $row['id'],
+                            $row['age'],
+                            $recipient_mail
+                        );
+                    }
+                }
+                if (in_array('sms', $channels) && !empty($recipient_phones)) {
+                    foreach ($recipient_phones as $recipient_phone) {
+                        printf(
+                            "[sms/birthday] %s (%04d) age %s: %s" . PHP_EOL,
+                            $row['name'],
+                            $row['id'],
+                            $row['age'],
+                            $recipient_phone
+                        );
+                    }
+                }
+                if (in_array('userpanel', $channels)) {
+                    printf(
+                        "[userpanel/birthday] %s (%04d): age %s" . PHP_EOL,
+                        $row['name'],
+                        $row['id'],
+                        $row['age']
+                    );
+                }
+                if (in_array('userpanel-urgent', $channels)) {
+                    printf(
+                        "[userpanel-urgent/birthday] %s (%04d): age %s" . PHP_EOL,
+                        $row['name'],
+                        $row['id'],
+                        $row['age']
+                    );
+                }
+            }
+
+            if (!$debug) {
+                if (in_array('mail', $channels) && !empty($recipient_mails)) {
+                    $msgid = create_message(MSG_MAIL, $subject, $message);
+                    foreach ($recipient_mails as $recipient_mail) {
+                        send_mail(
+                            $msgid,
+                            $row['id'],
+                            $recipient_mail,
+                            $row['name'],
+                            $subject,
+                            $message
+                        );
+                    }
+                }
+                if (in_array('sms', $channels) && !empty($recipient_phones)) {
+                    $msgid = create_message(MSG_SMS, $subject, $message);
+                    foreach ($recipient_phones as $recipient_phone) {
+                        send_sms($msgid, $row['id'], $recipient_phone, $message);
+                    }
+                }
+                if (in_array('userpanel', $channels)) {
+                    $msgid = create_message(MSG_USERPANEL, $subject, $message);
+                    send_to_userpanel($msgid, $row['id'], trans('userpanel'));
+                }
+                if (in_array('userpanel-urgent', $channels)) {
+                    $msgid = create_message(MSG_USERPANEL_URGENT, $subject, $message);
+                    send_to_userpanel($msgid, $row['id'], trans('userpanel urgent'));
+                }
+            }
+        }
+    }
+}
+
 // Node which warning flag has set
 if (empty($types) || in_array('warnings', $types)) {
     $customers = $DB->GetAll(
         "SELECT c.id, (" . $DB->Concat('c.lastname', "' '", 'c.name') . ") AS name,
         c.pin, c.message, m.email, x.phone, divisions.account, COALESCE(ca.balance, 0) AS balance
-        FROM customers c
+        FROM customeraddressview c
         LEFT JOIN divisions ON divisions.id = c.divisionid
         LEFT JOIN (SELECT " . $DB->GroupConcat('contact') . " AS email, customerid
             FROM customercontacts
             WHERE (type & ?) = ?
             GROUP BY customerid
-        ) m ON (m.customerid = c.id)
+        ) m ON (m.customerid = c.id) " . ($ignore_customer_consents ? '' : 'AND c.mailingnotice = 1') . "
         LEFT JOIN (SELECT " . $DB->GroupConcat('contact') . " AS phone, customerid
             FROM customercontacts
             WHERE (type & ?) = ?
             GROUP BY customerid
-        ) x ON (x.customerid = c.id)
+        ) x ON (x.customerid = c.id) " . ($ignore_customer_consents ? '' : 'AND c.smsnotice = 1') . "
         LEFT JOIN (SELECT SUM(value * currencyvalue) AS balance, customerid
             FROM cash
             GROUP BY customerid
         ) ca ON (ca.customerid = c.id)
         WHERE c.id IN (SELECT DISTINCT ownerid FROM vnodes WHERE warning = 1)"
-            . ($notifications['warnings']['deleted_customers'] ? '' : ' AND c.deleted = 0'),
+            . ($notifications['warnings']['deleted_customers'] ? '' : ' AND c.deleted = 0')
+            . ($customergroups ?: ''),
         array(
             CONTACT_EMAIL | CONTACT_NOTIFICATIONS | CONTACT_DISABLED,
             CONTACT_EMAIL | CONTACT_NOTIFICATIONS,
@@ -1859,12 +2052,12 @@ if (empty($types) || in_array('events', $types)) {
                             FROM customercontacts
                             WHERE (type & ?) = ?
                             GROUP BY customerid
-                        ) m ON (m.customerid = c.id)
+                        ) m ON (m.customerid = c.id) " . ($ignore_customer_consents ? '' : 'AND c.mailingnotice = 1') . "
                         LEFT JOIN (SELECT " . $DB->GroupConcat('contact') . " AS phone, customerid
                             FROM customercontacts
                             WHERE (type & ?) = ?
                             GROUP BY customerid
-                        ) x ON (x.customerid = c.id)
+                        ) x ON (x.customerid = c.id) " . ($ignore_customer_consents ? '' : 'AND c.smsnotice = 1') . "
                         WHERE c.id = ?",
                         array(
                             CONTACT_EMAIL | CONTACT_NOTIFICATIONS | CONTACT_DISABLED,

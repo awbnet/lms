@@ -79,7 +79,9 @@ if (isset($_GET['search'])) {
         }
     }
 
-    if ($SESSION->is_set('backto')) {
+    if ($SESSION->is_set('backto', true)) {
+        $SESSION->redirect('?' . $SESSION->get('backto', true));
+    } elseif ($SESSION->is_set('backto')) {
         $SESSION->redirect('?' . $SESSION->get('backto'));
     } else {
         $SESSION->redirect('?m=customerlist');
@@ -97,7 +99,14 @@ if (!isset($_POST['xjxfun'])) {
     } elseif (!$exists) {
         $SESSION->redirect('?m=customerlist');
     } else {
-        $backurl = $SESSION->is_set('backto') ? '?' . $SESSION->get('backto') : '?m=customerlist';
+        if ($SESSION->is_set('backto', true)) {
+            $backto = $SESSION->get('backto', true);
+        } elseif ($SESSION->is_set('backto')) {
+            $backto = $SESSION->get('backto');
+        } else {
+            $backto = '';
+        }
+        $backurl = $backto ? '?' . $backto : '?m=customerlist';
 
         $pin_min_size = intval(ConfigHelper::getConfig('phpui.pin_min_size', 4));
         if (!$pin_min_size) {
@@ -454,7 +463,7 @@ $customerinfo = $hook_data['customerinfo'];
 $SMARTY->assign('xajax', $LMS->RunXajax());
 $SMARTY->assign(compact('pin_min_size', 'pin_max_size', 'pin_allowed_characters'));
 $SMARTY->assign('customerinfo', $customerinfo);
-$SMARTY->assign('divisions', $LMS->GetDivisions());
+$SMARTY->assign('divisions', $LMS->GetDivisions(array('userid' => Auth::GetCurrentUser())));
 $SMARTY->assign('recover', ($action == 'recover' ? 1 : 0));
 $SMARTY->assign('customeredit_sortable_order', $SESSION->get_persistent_setting('customeredit-sortable-order'));
 $SMARTY->display('customer/customeredit.html');

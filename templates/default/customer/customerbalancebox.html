@@ -74,7 +74,10 @@
 		{tab_table}
 
 			{$datatables_max_records=intval(ConfigHelper::getConfig('phpui.datatables_max_records', 300))}
-			<TABLE id="customerbalancebox-datatable" class="lmsbox-inner{if !empty($balancelist.list) && (!$datatables_max_records || count($balancelist.list) < $datatables_max_records)} lms-ui-datatable{else} lms-ui-background-cycle{/if}"{if !empty($balancelist.list) && (!$datatables_max_records || count($balancelist.list) < $datatables_max_records)} data-page-length="{$n}" data-display-start="{$n = count($balancelist.list) + $limit}{if $n < 0}0{else}{$n}{/if}" style="display: none;"{/if} width="100%">
+			<TABLE id="customerbalancebox-datatable" class="lmsbox-inner{if !$datatables_max_records || empty($balancelist.list) || count($balancelist.list) < $datatables_max_records} lms-ui-datatable{else} lms-ui-background-cycle{/if}"
+					{if !$datatables_max_records || empty($balancelist.list) || count($balancelist.list) < $datatables_max_records} data-page-length="{$n}"
+					data-empty-table-message="{trans("That customer hasn't got any transactions.")}"
+					data-display-start="{if empty($balancelist.list)}{$n = $limit}{else}{$n = count($balancelist.list) + $limit}{/if}{if $n < 0}0{else}{$n}{/if}" style="display: none;"{/if} width="100%">
 				<COLGROUP>
 					<COL style="width: 1%;">
 					<COL style="width: 1%;">
@@ -310,12 +313,6 @@
 						<INPUT type="checkbox" form="addbalance-form"
 								NAME="marks{if $aggregate_documents}{if $item.doctype == $smarty.const.DOC_INVOICE || $item.doctype == $smarty.const.DOC_INVOICE_PRO || $item.doctype == $smarty.const.DOC_CNOTE}[invoice][{$item.docid}]{elseif $item.doctype == $smarty.const.DOC_RECEIPT}[receipt][{$item.docid}]{elseif $item.doctype == $smarty.const.DOC_DNOTE}[note][{$item.docid}]{else}[{$item.id}]{/if}{else}{if $item.doctype == $smarty.const.DOC_INVOICE_PRO && !ConfigHelper::checkConfig('phpui.proforma_invoice_generates_commitment')}[proforma][{$item.docid}]{/if}[{$item.id}]{/if}"
 								value="{$item.id}" class="lms-ui-multi-check">
-					</TD>
-				</TR>
-				{foreachelse}
-				<TR>
-					<TD class="empty-table" colspan="9">
-						<p>{trans("That customer hasn't got any transactions.")}</p>
 					</TD>
 				</TR>
 				{/foreach}

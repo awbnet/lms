@@ -80,6 +80,38 @@ version 26-git (????-??-??):
     part of system [chilan]
   - improvement: added 'phpui.send_message_confirm_threshold' configuration variable which control
     how many potential message recipients trigger confirmation dialog ('50' by default) [milek]
+  - enhancement: configuration variable 'rt.allow_modify_resolved_tickets_newer_than' allows
+    to prevent old ticket re-open (default '86400') [interduo]
+  - enhancement: allow to select different lms.ini file using its name containing http
+    server port [chilan]
+  - enhancement: additional selection level in assignment and promotion tariff definition - service
+    type [chilan]
+  - improvement: implemented clear button in lms-ui-multiselect ui controls [chilan]
+  - enhancement: customer group selection support added in lms-notify.php [chilan]
+  - enhancement: implemented user permissions for companies and global division context selection.
+    Configuration variable 'phpui.force_global_division_context' ('false' by default)
+    allows to force division contex [ravvar]
+  - improvement: converted customer group selection in customer search form to multiple
+    selection [chilan]
+  - enhancement: added the ability to copy user divisions between users [ravvar]
+  - enhancement: customer notes support in dedicated tab [chilan]
+  - enhancement: divided mailing notice consent to separate mail and sms delivery consents [chilan]
+  - enhancement: sms and mailing notice consent support for lms-notify.php backend script
+    ('ignore_customer_consents' script configuration variable set to 'true' allows to imitate previous
+    behavior) [chilan]
+  - improvement: transaction log tab content is loaded in background and on-demand [chilan]
+  - enhancement: lms-notify.php supports customer 'birthday' type notifications [chilan]
+  - improvement: 'phpui.default_node_check_mac' allows to enable mac checking automatically
+    during new node creation ('false' by default) [chilan]
+  - improvement: new customer group input parameter parser allows for much more group
+    assignment combination tests [chilan]
+  - improvement: implemented user group assignment management from user forms [chilan]
+  - improvement: 'phpui.touch_device_tooltips' configuration variable allows to disable globally
+    tooltips/hints on touch devices (default 'false' value means disabled) [chilan]
+  - enhancement: added transaction tab/box into netdevinfo/netdevedit views [chilan]
+  - improvement: allow to use assignments with backward period accounting - 'payments.backward_comment'
+    and 'payments.settlement_backward_comment' configuration variables control format of generated cash
+    operation content [chilan]
 
 version 25.0 (2020-05-15):
 

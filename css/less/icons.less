@@ -560,6 +560,17 @@
   }
 }
 
+.lms-ui-icon-usergroup,
+.lms-ui-icon-ugroup,
+.lms-ui-icon-ug {
+  .fa-icon;
+  .fas;
+  .lms-ui-icon;
+  &:before {
+    content: @fa-var-user-tag;
+  }
+}
+
 .lms-ui-icon-suspend,
 .lms-ui-icon-lock {
   .fa-icon;
@@ -1380,6 +1391,24 @@
   .lms-ui-icon;
   &:before {
     content: @fa-var-ellipsis-h;
+  }
+}
+
+.lms-ui-icon-more {
+  .fa-icon;
+  .fas;
+  .lms-ui-icon;
+  &:before {
+    content: @fa-var-angle-double-down;
+  }
+}
+
+.lms-ui-icon-less {
+  .fa-icon;
+  .fas;
+  .lms-ui-icon;
+  &:before {
+    content: @fa-var-angle-double-up;
   }
 }
 

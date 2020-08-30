@@ -24,6 +24,27 @@
  *  $Id$
  */
 
+if (isset($_GET['oper']) && $_GET['oper'] == 'loadtransactionlist') {
+    header('Content-Type: text/html');
+
+    if ($SYSLOG && ConfigHelper::checkPrivilege('transaction_logs')) {
+        $trans = $SYSLOG->GetTransactions(
+            array(
+                'key' => SYSLOG::getResourceKey(SYSLOG::RES_CUST),
+                'value' => $customerid,
+                'limit' => 300,
+                'details' => true,
+            )
+        );
+        $SMARTY->assign('transactions', $trans);
+        $SMARTY->assign('resourcetype', SYSLOG::RES_CUST);
+        $SMARTY->assign('resourceid', $customerid);
+        die($SMARTY->fetch('transactionlist.html'));
+    }
+
+    die();
+}
+
 if ($layout['module'] != 'customeredit') {
     $customerinfo = $LMS->GetCustomer($customerid);
 
@@ -32,6 +53,10 @@ if ($layout['module'] != 'customeredit') {
     }
 
     $SMARTY->assignByRef('customerinfo', $customerinfo);
+}
+
+if (!isset($resource_tabs['customernotes']) || $resource_tabs['customernotes']) {
+    $customernotes = $LMS->getCustomerNotes($customerid);
 }
 
 if (!isset($resource_tabs['customerassignments']) || $resource_tabs['customerassignments']) {
@@ -132,29 +157,6 @@ if (!isset($resource_tabs['customerdevices']) || $resource_tabs['customerdevices
     }
 }
 
-if (!isset($resource_tabs['transactions']) || $resource_tabs['transactions']) {
-    if ($SYSLOG && ConfigHelper::checkPrivilege('transaction_logs')) {
-        $trans = $SYSLOG->GetTransactions(
-            array(
-                'key' => SYSLOG::getResourceKey(SYSLOG::RES_CUST),
-                'value' => $customerid,
-                'limit' => 300,
-                'details' => true,
-            )
-        );
-/*
-        if (!empty($trans)) {
-            foreach ($trans as $idx => $tran) {
-                $SYSLOG->DecodeTransaction($trans[$idx]);
-            }
-        }
-*/
-        $SMARTY->assign('transactions', $trans);
-        $SMARTY->assign('resourcetype', SYSLOG::RES_CUST);
-        $SMARTY->assign('resourceid', $customerid);
-    }
-}
-
 // try to determine preselected cash registry numberplan for instant cash receipt creations
 $cashregistries = $LMS->GetCashRegistries($customerid);
 if (!empty($cashregistries)) {
@@ -189,6 +191,7 @@ $SMARTY->assign(array(
 ));
 
 $SMARTY->assign('sourcelist', $DB->GetAll('SELECT id, name FROM cashsources WHERE deleted = 0 ORDER BY name'));
+$SMARTY->assignByRef('customernotes', $customernotes);
 $SMARTY->assignByRef('customernodes', $customernodes);
 $SMARTY->assignByRef('customernetworks', $customernetworks);
 $SMARTY->assignByRef('customerdevices', $customerdevices);

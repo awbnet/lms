@@ -36,9 +36,13 @@ interface LMSDivisionManagerInterface
 
     public function GetDivisions($params = array());
 
+    public function getDivisionList($params = array());
+
     public function AddDivision($division);
 
     public function DeleteDivision($id);
 
     public function UpdateDivision($division);
+
+    public function CheckDivisionsAccess($divisions);
 }

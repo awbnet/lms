@@ -311,6 +311,23 @@ CREATE INDEX customerconsents_cdate_idx ON customerconsents (cdate);
 CREATE INDEX customerconsents_type_idx ON customerconsents (type);
 
 /* --------------------------------------------------------
+  Structure of table "customernotes" (customernotes)
+-------------------------------------------------------- */
+DROP SEQUENCE IF EXISTS customernotes_id_seq;
+CREATE SEQUENCE customernotes_id_seq;
+DROP TABLE IF EXISTS customernotes CASCADE;
+CREATE TABLE customernotes (
+    id integer DEFAULT nextval('customernotes_id_seq'::text) NOT NULL,
+    userid integer DEFAULT NULL
+       CONSTRAINT customernotes_userid_fkey REFERENCES users (id) ON DELETE SET NULL ON UPDATE CASCADE,
+    customerid integer NOT NULL
+       CONSTRAINT customernotes_customerid_fkey REFERENCES customers (id) ON DELETE CASCADE ON UPDATE CASCADE,
+    dt integer NOT NULL,
+    message text NOT NULL,
+    PRIMARY KEY (id)
+);
+
+/* --------------------------------------------------------
   Structure of table "numberplans"
 -------------------------------------------------------- */
 DROP SEQUENCE IF EXISTS numberplans_id_seq;
@@ -763,7 +780,7 @@ CREATE TABLE tariffs (
 	voip_tariff_id integer      DEFAULT NULL
 		REFERENCES voip_tariffs (id) ON DELETE SET NULL ON UPDATE CASCADE,
 	voip_tariff_rule_id integer DEFAULT NULL
-		REFERENCES voip_rules (id) ON DELETE SET NULL ON UPDATE CASCADE,
+		CONSTRAINT tariffs_voip_tariff_rule_id_fkey REFERENCES voip_rule_groups (id) ON DELETE SET NULL ON UPDATE CASCADE,
 	datefrom integer	NOT NULL DEFAULT 0,
 	dateto integer		NOT NULL DEFAULT 0,
 	authtype smallint 	DEFAULT 0 NOT NULL,
@@ -857,6 +874,7 @@ CREATE TABLE assignments (
 	customerid integer	NOT NULL
 		CONSTRAINT assignments_customerid_fkey REFERENCES customers (id) ON DELETE CASCADE ON UPDATE CASCADE,
 	period smallint 	DEFAULT 0 NOT NULL,
+	backwardperiod smallint DEFAULT 0 NOT NULL,
 	at integer 		DEFAULT 0 NOT NULL,
 	datefrom integer	DEFAULT 0 NOT NULL,
 	dateto integer		DEFAULT 0 NOT NULL,
@@ -2506,7 +2524,7 @@ DROP TABLE IF EXISTS templates CASCADE;
 CREATE TABLE templates (
 	id      integer		 DEFAULT nextval('templates_id_seq'::text) NOT NULL,
 	type    smallint	 NOT NULL,
-	name    varchar(50)	 NOT NULL,
+	name    varchar(100)	 NOT NULL,
 	subject varchar(255) DEFAULT '' NOT NULL,
 	message	text		 DEFAULT '' NOT NULL,
 	PRIMARY KEY (id),
@@ -2574,6 +2592,24 @@ CREATE TABLE userassignments (
 	UNIQUE (usergroupid, userid)
 );
 CREATE INDEX userassignments_userid_idx ON userassignments (userid);
+
+/* ---------------------------------------------------
+ Structure of table userdivisions
+------------------------------------------------------*/
+DROP SEQUENCE IF EXISTS userdivisions_id_seq;
+CREATE SEQUENCE userdivisions_id_seq;
+DROP TABLE IF EXISTS userdivisions CASCADE;
+CREATE TABLE userdivisions (
+    id integer DEFAULT nextval('userdivisions_id_seq'::text) NOT NULL,
+    userid      integer     NOT NULL
+        CONSTRAINT users_userid_fkey REFERENCES users (id) ON DELETE CASCADE ON UPDATE CASCADE,
+    divisionid  integer     NOT NULL
+        CONSTRAINT divisions_divisionid_fkey REFERENCES divisions (id) ON DELETE CASCADE ON UPDATE CASCADE,
+    PRIMARY KEY (id),
+    CONSTRAINT userdivisions_userid_divisionid_ukey UNIQUE (userid, divisionid)
+);
+DROP INDEX IF EXISTS userdivisions_userid_idx;
+CREATE INDEX userdivisions_userid_idx ON userdivisions (userid);
 
 /* ---------------------------------------------------
  Structure of table passwdhistory
@@ -2769,6 +2805,7 @@ CREATE VIEW customerconsentview AS
         SUM(CASE WHEN cc.type = 1 THEN cc.cdate ELSE 0 END)::integer AS consentdate,
         SUM(CASE WHEN cc.type = 2 THEN 1 ELSE 0 END)::smallint AS invoicenotice,
         SUM(CASE WHEN cc.type = 3 THEN 1 ELSE 0 END)::smallint AS mailingnotice,
+        SUM(CASE WHEN cc.type = 8 THEN 1 ELSE 0 END)::smallint AS smsnotice,
         SUM(CASE WHEN cc.type = 4 THEN 1 ELSE 0 END)::smallint AS einvoice
     FROM customers c
         LEFT JOIN customerconsents cc ON cc.customerid = c.id
@@ -2779,6 +2816,7 @@ CREATE VIEW customerview AS
         cc.consentdate AS consentdate,
         cc.invoicenotice AS invoicenotice,
         cc.mailingnotice AS mailingnotice,
+        cc.smsnotice AS smsnotice,
         cc.einvoice AS einvoice,
         a1.country_id as countryid, a1.ccode,
         a1.zip as zip, a1.city as city,
@@ -2801,6 +2839,10 @@ CREATE VIEW customerview AS
         SELECT 1 FROM customerassignments a
         JOIN excludedgroups e ON (a.customergroupid = e.customergroupid)
         WHERE e.userid = lms_current_user() AND a.customerid = c.id)
+        AND c.divisionid IN (
+            SELECT ud.divisionid
+            FROM userdivisions ud
+            WHERE ud.userid = lms_current_user())
         AND c.type < 2;
 
 CREATE VIEW contractorview AS
@@ -2808,6 +2850,7 @@ CREATE VIEW contractorview AS
         cc.consentdate AS consentdate,
         cc.invoicenotice AS invoicenotice,
         cc.mailingnotice AS mailingnotice,
+        cc.smsnotice AS smsnotice,
         cc.einvoice AS einvoice,
         a1.country_id as countryid, a1.ccode,
         a1.zip as zip, a1.city as city, a1.street as street,
@@ -2832,6 +2875,7 @@ CREATE VIEW customeraddressview AS
         cc.consentdate AS consentdate,
         cc.invoicenotice AS invoicenotice,
         cc.mailingnotice AS mailingnotice,
+        cc.smsnotice AS smsnotice,
         cc.einvoice AS einvoice,
         a1.country_id as countryid, a1.ccode,
         a1.zip as zip, a1.city as city, a1.street as street,
@@ -3158,8 +3202,17 @@ CREATE VIEW customermailsview AS
 			GROUP BY customerid;
 
 CREATE VIEW vusers AS
-	SELECT *, (firstname || ' ' || lastname) AS name, (lastname || ' ' || firstname) AS rname
-	FROM users;
+    SELECT u.*, (u.firstname || ' ' || u.lastname) AS name, (u.lastname || ' ' || u.firstname) AS rname
+    FROM users u
+    LEFT JOIN userdivisions ud ON u.id = ud.userid
+    WHERE lms_current_user() = 0 OR ud.divisionid IN (SELECT ud2.divisionid
+                             FROM userdivisions ud2
+                             WHERE ud2.userid = lms_current_user())
+    GROUP BY u.id;
+
+CREATE VIEW vallusers AS
+SELECT *, (firstname || ' ' || lastname) AS name, (lastname || ' ' || firstname) AS rname
+FROM users;
 
 CREATE FUNCTION customerbalances_update()
     RETURNS trigger
@@ -3351,6 +3404,7 @@ URL: %url
 ('phpui', 'default_teryt_city', 'false', '', 0),
 ('phpui', 'passwordhistory', 6, '', 0),
 ('phpui', 'event_usergroup_selection_type', 'update', '', 0),
+('phpui', 'force_global_division_context', 'false', '', 0),
 ('payments', 'date_format', '%Y/%m/%d', '', 0),
 ('payments', 'default_unit_name', 'pcs.', '', 0),
 ('voip', 'default_cost_limit', '200', '', 2),
@@ -3782,6 +3836,6 @@ INSERT INTO netdevicemodels (name, alternative_name, netdeviceproducerid) VALUES
 ('XR7', 'XR7 MINI PCI PCBA', 2),
 ('XR9', 'MINI PCI 600MW 900MHZ', 2);
 
-INSERT INTO dbinfo (keytype, keyvalue) VALUES ('dbversion', '2020080300');
+INSERT INTO dbinfo (keytype, keyvalue) VALUES ('dbversion', '2020082800');
 
 COMMIT;

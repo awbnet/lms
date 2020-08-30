@@ -24,9 +24,6 @@
  *  $Id$
  */
 
-// REPLACE THIS WITH PATH TO YOUR CONFIG FILE
-$CONFIG_FILE = DIRECTORY_SEPARATOR . 'etc' . DIRECTORY_SEPARATOR . 'lms' . DIRECTORY_SEPARATOR . 'lms.ini';
-
 // PLEASE DO NOT MODIFY ANYTHING BELOW THIS LINE UNLESS YOU KNOW
 // *EXACTLY* WHAT ARE YOU DOING!!!
 // *******************************************************************
@@ -35,15 +32,19 @@ define('START_TIME', microtime(true));
 define('LMS-UI', true);
 define('K_TCPDF_EXTERNAL_CONFIG', true);
 define('K_TCPDF_CALLS_IN_HTML', true);
-ini_set('error_reporting', E_ALL&~E_NOTICE);
+ini_set('error_reporting', E_ALL & ~E_NOTICE);
+
+$CONFIG_FILE = DIRECTORY_SEPARATOR . 'etc' . DIRECTORY_SEPARATOR . 'lms' . DIRECTORY_SEPARATOR . 'lms.ini';
 
 // find alternative config files:
 if (is_readable('lms.ini')) {
     $CONFIG_FILE = 'lms.ini';
+} elseif (is_readable(DIRECTORY_SEPARATOR . 'etc' . DIRECTORY_SEPARATOR . 'lms' . DIRECTORY_SEPARATOR . 'lms-' . $_SERVER['HTTP_HOST'] . ':' . $_SERVER['SERVER_PORT'] . '.ini')) {
+    $CONFIG_FILE = DIRECTORY_SEPARATOR . 'etc' . DIRECTORY_SEPARATOR . 'lms' . DIRECTORY_SEPARATOR . 'lms-' . $_SERVER['HTTP_HOST'] . ':' . $_SERVER['SERVER_PORT'] . '.ini';
 } elseif (is_readable(DIRECTORY_SEPARATOR . 'etc' . DIRECTORY_SEPARATOR . 'lms' . DIRECTORY_SEPARATOR . 'lms-' . $_SERVER['HTTP_HOST'] . '.ini')) {
     $CONFIG_FILE = DIRECTORY_SEPARATOR . 'etc' . DIRECTORY_SEPARATOR . 'lms' . DIRECTORY_SEPARATOR . 'lms-' . $_SERVER['HTTP_HOST'] . '.ini';
 } elseif (!is_readable($CONFIG_FILE)) {
-    die('Unable to read configuration file ['.$CONFIG_FILE.']!');
+    die('Unable to read configuration file [' . $CONFIG_FILE . ']!');
 }
 
 define('CONFIG_FILE', $CONFIG_FILE);
@@ -158,6 +159,17 @@ $SESSION = new Session(
     ConfigHelper::getConfig('phpui.timeout'),
     ConfigHelper::getConfig('phpui.settings_timeout')
 );
+// new browser tab can be opened as hidden or tabid of new tab can be not initialised
+// so we have to be careful and handle 'backto' session variable in special way and
+// correct this variable when new tab id has been determined before the moment
+if (isset($_GET['oldtabid']) && isset($_GET['tabid']) && isset($_POST['oldbackto']) && isset($_POST['backto'])
+    && preg_match('/^[0-9]+$/', $_GET['oldtabid'])
+    && preg_match('/^[0-9]+$/', $_GET['tabid'])) {
+    $SESSION->fixBackTo($_GET['oldtabid'], $_POST['oldbackto'], $_GET['tabid'], $_POST['backto']);
+    //$SESSION->close();
+    header('Content-Type: application/json');
+    die('[]');
+}
 $AUTH = new Auth($DB, $SESSION);
 $LMS = new LMS($DB, $AUTH, $SYSLOG);
 
@@ -241,9 +253,40 @@ if ($AUTH->islogged) {
         }
     }
 
-    if (!$api) {
-        $SMARTY->assign('main_menu_sortable_order', $SESSION->get_persistent_setting('main-menu-order'));
+    $user_divisions = $LMS->GetDivisions(array('userid' => Auth::GetCurrentUser()));
+    $user_divisions_ids = array_keys($user_divisions);
+    $persistentDivisionContext = $SESSION->get_persistent_setting('division_context');
+    $tabDivisionContext = $SESSION->get('division_context', true);
+    // check if user has any division
+    if (!$user_divisions) {
+        $SESSION->save_persistent_setting('division_context', '');
+        $tabDivisionContext = '';
+        $SESSION->save('division_context', $tabDivisionContext, true);
+    } else {
+        $user_division = reset($user_divisions);
+        if (count($user_divisions) > 1) {
+            if (!isset($persistentDivisionContext)
+                || (!in_array($persistentDivisionContext, $user_divisions_ids)
+                    && !empty($persistentDivisionContext))) {
+                $SESSION->save_persistent_setting('division_context', '');
+                $persistentDivisionContext = $SESSION->get_persistent_setting('division_context');
+            }
+            if (!isset($tabDivisionContext)
+                || (!in_array($persistentDivisionContext, $user_divisions_ids)
+                    && !empty($persistentDivisionContext))) {
+                $tabDivisionContext = $persistentDivisionContext;
+                $SESSION->save('division_context', $tabDivisionContext, true);
+            }
+        } else {
+            $SESSION->save_persistent_setting('division_context', $user_division['id']);
+            $SESSION->save('division_context', $user_division['id'], true);
+        }
+    }
+    $layout['division'] = $tabDivisionContext;
 
+    if (!$api) {
+        $SMARTY->assign('division_context', $tabDivisionContext);
+        $SMARTY->assign('main_menu_sortable_order', $SESSION->get_persistent_setting('main-menu-order'));
         $SMARTY->assign('qs_properties', $qs_properties);
 
         $qs_fields = $SESSION->get_persistent_setting('qs-fields');

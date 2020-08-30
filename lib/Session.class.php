@@ -46,6 +46,8 @@ class Session
                         // garbage collector procedure
 
     private $tabId = null;
+    private static $oldBackTo = '';
+    private static $backTo = '';
 
     public function __construct(&$DB, $timeout = 0, $settings_timeout = 0)
     {
@@ -112,9 +114,50 @@ class Session
         }
     }
 
+    // new browser tab can be opened as hidden or tabid of new tab can be not initialised
+    // so we have to be careful and handle 'backto' session variable in special way and
+    // correct this variable when new tab id has been determined before the moment
+    public static function getOldBackTo()
+    {
+        return self::$oldBackTo;
+    }
+
+    public static function getBackTo()
+    {
+        return self::$backTo;
+    }
+
+    public function fixBackTo($oldTabId, $oldBackTo, $newTabId, $newBackTo)
+    {
+        $this->DB->BeginTrans();
+        $this->DB->LockTables('sessions');
+
+        $content = $this->DB->GetOne('SELECT content FROM sessions WHERE id = ?', array($this->SID));
+        $content = unserialize($content);
+
+        if (isset($content['tabs'][$oldTabId]['backto'])) {
+            if ($content['tabs'][$oldTabId]['backto'] != $oldBackTo) {
+                $content['tabs'][$oldTabId]['backto'] = $oldBackTo;
+            }
+        }
+        if (!isset($content['tabs'][$newTabId])) {
+            $content['tabs'][$newTabId] = array();
+        }
+        $content['tabs'][$newTabId]['backto'] = $newBackTo;
+
+        $this->DB->Execute('UPDATE sessions SET content = ? WHERE id = ?', array(serialize($content), $this->SID));
+
+        $this->DB->UnLockTables();
+        $this->DB->CommitTrans();
+    }
+
     public function save($variable, $content, $tab = false)
     {
         if ($tab) {
+            if ($variable === 'backto') {
+                self::$oldBackTo = $this->_tab_content[$this->tabId]['backto'];
+                self::$backTo = $content;
+            }
             if (!isset($this->_tab_content[$this->tabId])) {
                 $this->_tab_content[$this->tabId] = array();
             }
@@ -268,10 +311,29 @@ class Session
             $session_content = array_intersect_key($content, $session_variables);
             $settings_content = array_diff_key($content, $session_variables);
             $settings_content['mtime'] = time();
+
+            // new browser tab can be opened as hidden or tabid of new tab can be not initialised
+            // so we have to be careful and handle 'backto' session variable in special way and
+            // we should check if tabs info in session content stored in database didn't change
+            // in mean time and if it did than one or more from ajax calls changed it and we should
+            // use it as reliable source of info.
+
+            $this->DB->BeginTrans();
+            $this->DB->LockTables('sessions');
+
+            $content = unserialize($this->DB->GetOne('SELECT content FROM sessions WHERE id = ?', array($this->SID)));
+            if (count($content['tabs']) > count($session_content['tabs'])) {
+                $session_content['tabs'] = $content['tabs'];
+            }
+
             $this->DB->Execute(
                 'UPDATE sessions SET content = ?, mtime = ?NOW? WHERE id = ?',
                 array(serialize($session_content), $this->SID)
             );
+
+            $this->DB->UnLockTables();
+            $this->DB->CommitTrans();
+
             $this->DB->Execute(
                 'UPDATE users SET settings = ?, persistentsettings = ? WHERE login = ?',
                 array(serialize($settings_content), serialize($this->_persistent_settings), $this->_content['session_login'])

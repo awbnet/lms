@@ -24,6 +24,10 @@
  *  $Id$
  */
 
+$_LANG['<!assignment>backward'] = 'wstecz';
+
+$_LANG['No documents to JPK export!'] = 'Brak dokumentów do eksportu JPK!';
+
 $_LANG['Customer has not any assigned email contacts with "documents" flag!'] = 'Klient nie posiada przypisanych żadnych adresów poczty elektronicznej z ustawioną flagą "dokumenty"!';
 
 $_LANG['show average speed'] = 'pokaż prędkość średnią';
@@ -1271,8 +1275,7 @@ $_LANG['No. $a'] = 'Nr $a';
 $_LANG['no access'] = 'brak dostępu';
 $_LANG['No cash operations to import.'] = 'Brak operacji kasowych do zaimportowania.';
 $_LANG['No computers were found, either exists in the database or nbtscan binary not found.'] = 'Nie znaleziono żadnych komputerów bądź wszystkie komputery są już w bazie danych lub program nbtscan nie jest dostępny w systemie.';
-$_LANG['No configuration options in database.'] = 'Brak opcji konfiguracyjnych w bazie danych.';
-$_LANG['Click <A href="?m=configload">here</A> to import them from lms.ini.'] = 'Kliknij <A href="?m=configload">tutaj</A> aby je zaimportować do bazy.';
+$_LANG['No configuration options in database.<br>Click <A href="$a">here</A> to import them from lms.ini.'] = 'Brak opcji konfiguracyjnych w bazie danych.<br>Kliknij <A href="$a">tutaj</A> aby je zaimportować do bazy.';
 $_LANG['Click $a to create.'] = 'Kliknij $a aby utworzyć.';
 $_LANG['here'] = 'tutaj';
 $_LANG['Node ID:'] = 'ID komputera:';
@@ -1859,6 +1862,7 @@ $_LANG['You have no address pools. Use menu to add new networks.'] = 'Nie posiad
 $_LANG['You have no privileges to review this queue!'] = 'Nie masz uprawnień by przeglądać tę kolejkę!';
 $_LANG['You have no privileges to this queue!'] = 'Nie masz uprawnień do tej kolejki!';
 $_LANG['You have to enter first and lastname!'] = 'Musisz wpisać imię i nazwisko!';
+$_LANG['You have to choose division!'] = 'Musisz wybrać firmę!';
 $_LANG['You have to select owner!'] = 'Musisz wybrać właściciela!';
 $_LANG['You have to specify alias name!'] = 'Musisz wybrać nazwę aliasu!';
 $_LANG['You have to specify event day!'] = 'Musisz wybrać dzień wpisu!';
@@ -2497,8 +2501,10 @@ $_LANG['Consent to electronic invoices:'] = 'Zgoda na faktury elektroniczne:';
 $_LANG['Consent to electronic invoices'] = 'Zgoda na faktury elektroniczne';
 $_LANG['Consent to invoices delivery via e-mail:'] = 'Zgoda na dostarczanie faktur pocztą elektroniczną:';
 $_LANG['invoice delivery via e-mail'] = 'dostarczanie faktur pocztą elektroniczną';
-$_LANG['Consent to messages delivery via e-mail or sms:'] = 'Zgoda na dostarczanie informacji pocztą elektr. lub smsem:';
-$_LANG['message delivery via e-mail or sms'] = 'dostarczanie informacji pocztą elektr. lub smsem';
+$_LANG['Consent to messages delivery via e-mail:'] = 'Zgoda na dostarczanie informacji pocztą elektr.:';
+$_LANG['Consent to messages delivery via sms:'] = 'Zgoda na dostarczanie informacji smsem:';
+$_LANG['message delivery via e-mail'] = 'dostarczanie informacji pocztą elektr.';
+$_LANG['message delivery via sms'] = 'dostarczanie informacji smsem';
 $_LANG['Rows: $a'] = 'Liczba wierszy: $a';
 $_LANG['private person'] = 'osoba fizyczna';
 $_LANG['legal entity'] = 'osoba prawna / firma';
@@ -2536,7 +2542,9 @@ $_LANG['City is required!'] = 'Miasto jest wymagane!';
 $_LANG['Company Divisions Definitions'] = 'Definicje firm (oddziałów)';
 $_LANG['Display this form again, when this division is saved'] = 'Wyświetl ten formularz ponownie po dodaniu firmy';
 $_LANG['Divisions'] = 'Firmy (Oddziały)';
+$_LANG['Divisions:'] = 'Firmy (Oddziały):';
 $_LANG['Divisions List'] = 'Lista firm';
+$_LANG['Global division context'] = 'Globalny kontekst firmy';
 $_LANG['Division long name is required!'] = 'Pełna nazwa firmy jest wymagana!';
 $_LANG['Division short name is required!'] = 'Skrócona nazwa firmy jest wymagana!';
 $_LANG['Division with specified name already exists!'] = 'Firma o podanej nazwie już istnieje!';
@@ -3786,6 +3794,7 @@ $_LANG['Are you sure, you want to recover cancelled invoice \'$a\'?'] = 'Jesteś
 $_LANG['Are you sure, you want to recover cancelled debit note \'$a\'?'] = 'Jesteś pewien, że chcesz przywrócić anulowaną notę obciążeniową \'$a\'?';
 
 $_LANG['User groups'] = 'Grupy użytkowników';
+$_LANG['User groups:'] = 'Grupy użytkowników:';
 $_LANG['user group<!syslog>'] = 'grupa użytkowników';
 $_LANG['User Groups List'] = 'Lista grup użytkowników';
 $_LANG['All users are members of this group.'] = 'Wszyscy użytkownicy są członkami tej grupy.';
@@ -4767,6 +4776,7 @@ $_LANG['Apply'] = 'Zastosuj';
 
 $_LANG['Warnings'] = 'Ostrzeżenia';
 $_LANG['Customer groups'] = 'Grupy klientów';
+$_LANG['Customer groups:'] = 'Grupy klientów:';
 $_LANG['Customer consents'] = 'Zgody klientów';
 
 $_LANG['Attachment gallery'] = 'Galeria załączników';
@@ -4794,3 +4804,13 @@ $_LANG['Select resource type'] = 'Wybierz typ zasobu';
 $_LANG['Customise'] = 'Dostosuj';
 
 $_LANG['don\'t scale images'] = 'nie skaluj obrazków';
+
+$_LANG['customer note<!syslog>'] = 'notatka klienta';
+$_LANG['Customer Notes'] = 'Notatki klienta';
+$_LANG['Customer Notes:'] = 'Notatki klienta:';
+$_LANG['New customer note:'] = 'Nowa notatka:';
+$_LANG['Add new customer note'] = 'Dodaje nową notatkę klienta';
+$_LANG['No customer notes.'] = 'Brak notatek klienta.';
+$_LANG['Customer note is too short!'] = 'Notatka kliencka jest zbyt krótka!';
+
+$_LANG['Show more/less'] = 'Pokaż więcej/mniej';
