@@ -122,6 +122,7 @@ function CustomerAssignmentHelper(options) {
 
 	this.promotionSelectionHandler = function() {
 		$('#a_location,#a_check_all_terminals,#a_options,#a_existingassignments,#a_properties').toggle(parseInt($(this).val()) != 0);
+		$('#backward-period').toggle(parseInt($(this).val()) == 0);
 
 		$('.promotion-table').hide();
 
@@ -534,6 +535,7 @@ function tariffSelectionHandler() {
 		$('#a_properties').show();
 	} else {
 		$('#a_numberplan,#a_paytype,#a_address,#a_day').show();
+		$('#backward-period').toggle(val != -2 || !promotion_select);
 		if ((val == -2 && promotion_select) || (val != -2)) {
 			$('#a_options,#a_properties,#a_existingassignments').show();
 		} else {
