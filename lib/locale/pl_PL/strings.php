@@ -125,6 +125,7 @@ $_LANG['IT Services'] = 'Usługi IT';
 $_LANG['<!rt>Other'] = 'Inna';
 $_LANG['Other'] = 'Inny';
 $_LANG['Offer'] = 'Oferta';
+$_LANG['offer'] = 'oferta';
 $_LANG['Fault'] = 'Usterka';
 $_LANG['If verifier is set then he\'s the only person who can change deadline!'] = 'Jeśli weryfikator jest ustawiony, jest on jedyną osobą, która może zmienić termin ostateczny!';
 $_LANG['Instalation'] = 'Instalacja';
@@ -4100,6 +4101,7 @@ $_LANG['If set to "true" then logout confirmation is required. Default "false"']
 $_LANG['SMS from $a'] = 'SMS od $a';
 $_LANG['Source:'] = 'Źródło:';
 $_LANG['Select ticket source'] = 'Wybierz źródło zgłoszenia';
+$_LANG['Set ticket priority'] = 'Wybierz priorytet zgłoszenia';
 
 $_LANG['Create ticket'] = 'Utwórz zgłoszenie';
 $_LANG['Request Number'] = 'Nr zgłoszenia';
