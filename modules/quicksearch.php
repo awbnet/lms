@@ -89,6 +89,12 @@ if (isset($_POST['properties']) && is_array($_POST['properties'])) {
     $properties = array();
 }
 
+$resourceIdOnly = preg_match('/^#[0-9]+$/', $search) > 0;
+if ($resourceIdOnly) {
+    $properties = array('id' => 'id');
+    $search = str_replace('#', '', $search);
+}
+
 switch ($mode) {
     case 'customer':
         if (empty($search) || (!ConfigHelper::checkPrivilege('customer_management') && !ConfigHelper::checkPrivilege('read_only'))) {
