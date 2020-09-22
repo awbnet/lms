@@ -109,7 +109,14 @@ if ($id && !isset($_POST['ticket'])) {
                     'sms_body' => $sms_body,
                 ));
 
-                $SESSION->redirect('?m=rtticketview&id=' . $id);
+                if ($SESSION->is_set('backto')) {
+                    $SESSION->redirect(
+                        '?' . $SESSION->get('backto') . ($SESSION->is_set('backid') ? '#' . $SESSION->get('backid') : '')
+                    );
+                } else {
+                    $SESSION->redirect('?m=rtticketview&id=' . $id);
+                }
+
                 break;
             case 'assign':
                 if (isset($_GET['check-conflict'])) {
@@ -338,6 +345,18 @@ if (isset($_POST['ticket'])) {
     if (!ConfigHelper::checkConfig('phpui.helpdesk_allow_change_ticket_state_from_open_to_new')) {
         if ($ticketedit['state'] == RT_NEW && $ticketedit['owner']) {
             $ticketedit['state'] = RT_OPEN;
+        }
+    }
+
+    if (!ConfigHelper::checkPrivilege('superuser') && $ticket['state'] == RT_VERIFIED) {
+        if ($ticketedit['state'] != RT_VERIFIED) {
+            if (!empty($ticket['verifierid']) && $ticket['verifierid'] != Auth::GetCurrentUser()) {
+                $error['state'] = trans('Ticket is already transferred to verifier!');
+            }
+        } else {
+            if ($ticket['verifierid'] != $ticketedit['verifierid'] && $ticketedit['verifierid'] != Auth::GetCurrentUser()) {
+                $error['verifierid'] = trans('Ticket is already transferred to verifier!');
+            }
         }
     }
 

@@ -2257,6 +2257,7 @@ class LMSFinanceManager extends LMSManager implements LMSFinanceManagerInterface
                 }
             }
 
+            $result['taxcategories'] = array();
             $result['pdiscount'] = 0;
             $result['vdiscount'] = 0;
             $result['totalbase'] = 0;
@@ -2265,6 +2266,7 @@ class LMSFinanceManager extends LMSManager implements LMSFinanceManagerInterface
 
             $result['flags'] = array(
                 DOC_FLAG_RECEIPT => ($result['flags'] & DOC_FLAG_RECEIPT) ? 1 : 0,
+                DOC_FLAG_TELECOM_SERVICE => ($result['flags'] & DOC_FLAG_TELECOM_SERVICE) ? 1 : 0,
             );
 
             if ($result['reference'] && $result['type'] != DOC_INVOICE_PRO) {
@@ -2341,8 +2343,14 @@ class LMSFinanceManager extends LMSManager implements LMSFinanceManagerInterface
 
                     $result['pdiscount'] += $row['pdiscount'];
                     $result['vdiscount'] += $row['vdiscount'];
+
+                    if (!empty($row['taxcategory'])) {
+                        $result['taxcategories'][] = $row['taxcategory'];
+                    }
                 }
             }
+
+            $result['taxcategories'] = array_unique($result['taxcategories']);
 
             $result['pdate'] = $result['cdate'] + ($result['paytime'] * 86400);
             $result['value'] = $result['total'] - (isset($result['invoice']) ? $result['invoice']['total'] : 0);
@@ -3724,6 +3732,9 @@ class LMSFinanceManager extends LMSManager implements LMSFinanceManagerInterface
                     break;
                 case 'address':
                     $where = ' AND address ?LIKE? ' . $this->db->Escape('%' . $search . '%');
+                    break;
+                case 'positions':
+                    $where = ' AND EXISTS (SELECT 1 FROM receiptcontents WHERE description ?LIKE? ' . $this->db->Escape('%' . $search . '%') . ')';
                     break;
             }
         }

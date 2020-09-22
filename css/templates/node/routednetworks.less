@@ -1,7 +1,7 @@
 /*
  * LMS version 1.11-git
  *
- *  (C) Copyright 2001-2018 LMS Developers
+ *  (C) Copyright 2001-2020 LMS Developers
  *
  *  Please, see the doc/AUTHORS for more information about authors!
  *
@@ -22,21 +22,15 @@
  *  $Id$
  */
 
-[id^="networkspanel-"] {
+[id^="routednetworkspanel-"] {
 	.name {
-		width: 30em;
-	}
-	.id {
-		width: 8em;
+		width: 20em;
 	}
 	.address {
 		width: 10em;
 	}
-	.router {
-		width: 10em;
-	}
-	.host {
-		width: 10em;
+	.comment {
+		width: 40em;
 	}
 	.buttons {
 		width: 6em;
@@ -45,15 +39,7 @@
 	@media all and (max-width: 1200px) {
 		.col-2 {
 			flex-direction: column !important;
-			width: 25em !important;
-			div {
-				flex-grow: 0 !important;
-				width: 100% !important;
-			}
-		}
-		.col-3 {
-			flex-direction: column !important;
-			width: 10em !important;
+			width: 20em !important;
 			div {
 				flex-grow: 0 !important;
 				width: 100% !important;
@@ -61,7 +47,7 @@
 		}
 	}
 	@media all and (max-width: 768px) {
-		.col-4 {
+		.col-3 {
 			flex-direction: column !important;
 			width: 20em !important;
 			div {

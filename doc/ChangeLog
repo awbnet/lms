@@ -144,6 +144,13 @@ version 26-git (????-??-??):
   - improvement: added issuer's signature field to debit note (TCPDF/HTML)
     (visible if 'notes.issuer_signature' is set to true, default: 'false') [awbnet]
   - improvement: made TCPDF debit note version look like TCPDF invoice [awbnet]
+  - improvement: new default values for 'phpui.multiselect_popup_on_bottom' (change from 'false'
+    to 'true') and 'phpui.multiselect_max_visible' (change from '0' to '5') [chilan]
+  - enhancement: added routed network support [chilan]
+  - improvement: 'invoices.show_tax_category' configuration variable ('false' by default) controls
+    tax category column visibility on invoices [chilan]
+  - enhancement: added territ city type property support [chilan]
+  - enhancement: implemented JPK new 'EE' flag support for invoices [chilan]
 
 version 25.0 (2020-05-15):
 

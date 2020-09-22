@@ -1,7 +1,7 @@
 /*
  * LMS version 1.11-git
  *
- *  (C) Copyright 2001-2018 LMS Developers
+ *  (C) Copyright 2001-2019 LMS Developers
  *
  *  Please, see the doc/AUTHORS for more information about authors!
  *
@@ -22,52 +22,20 @@
  *  $Id$
  */
 
-[id^="networkspanel-"] {
-	.name {
-		width: 30em;
-	}
-	.id {
-		width: 8em;
-	}
-	.address {
-		width: 10em;
-	}
-	.router {
-		width: 10em;
-	}
-	.host {
-		width: 10em;
-	}
-	.buttons {
-		width: 6em;
-	}
+$(function() {
+	$('#add-routed-networks').click(function() {
+		if ($("[name='routednetworkid[]'] option:selected").length) {
+			$('form#routednetworks').submit();
+		} else {
+			return false;
+		}
+	});
 
-	@media all and (max-width: 1200px) {
-		.col-2 {
-			flex-direction: column !important;
-			width: 25em !important;
-			div {
-				flex-grow: 0 !important;
-				width: 100% !important;
-			}
+	$('#delete-routed-networks').click(function() {
+		if ($(this).closest('div.lms-ui-multi-check').find('input:checked').length) {
+			confirmDialog($t("Are you sure, you want to remove routed network to node assignments?"), this).done(function() {
+				$('form#routednetworks').attr('action', '?m=routednetworks&action=delete').submit();
+			});
 		}
-		.col-3 {
-			flex-direction: column !important;
-			width: 10em !important;
-			div {
-				flex-grow: 0 !important;
-				width: 100% !important;
-			}
-		}
-	}
-	@media all and (max-width: 768px) {
-		.col-4 {
-			flex-direction: column !important;
-			width: 20em !important;
-			div {
-				flex-grow: 0 !important;
-				width: 100% !important;
-			}
-		}
-	}
-}
+	});
+});

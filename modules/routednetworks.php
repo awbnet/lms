@@ -1,7 +1,9 @@
+<?php
+
 /*
  * LMS version 1.11-git
  *
- *  (C) Copyright 2001-2018 LMS Developers
+ *  (C) Copyright 2001-2020 LMS Developers
  *
  *  Please, see the doc/AUTHORS for more information about authors!
  *
@@ -22,52 +24,26 @@
  *  $Id$
  */
 
-[id^="networkspanel-"] {
-	.name {
-		width: 30em;
-	}
-	.id {
-		width: 8em;
-	}
-	.address {
-		width: 10em;
-	}
-	.router {
-		width: 10em;
-	}
-	.host {
-		width: 10em;
-	}
-	.buttons {
-		width: 6em;
-	}
+switch ($_GET['action']) {
+    case 'add':
+        $LMS->addNodeRoutedNetworks(array(
+            'nodeid' => $_POST['nodeid'],
+            'networks' => $_POST['routednetworkid'],
+            'comment' => $_POST['routednetworkcomment'],
+        ));
+        break;
 
-	@media all and (max-width: 1200px) {
-		.col-2 {
-			flex-direction: column !important;
-			width: 25em !important;
-			div {
-				flex-grow: 0 !important;
-				width: 100% !important;
-			}
-		}
-		.col-3 {
-			flex-direction: column !important;
-			width: 10em !important;
-			div {
-				flex-grow: 0 !important;
-				width: 100% !important;
-			}
-		}
-	}
-	@media all and (max-width: 768px) {
-		.col-4 {
-			flex-direction: column !important;
-			width: 20em !important;
-			div {
-				flex-grow: 0 !important;
-				width: 100% !important;
-			}
-		}
-	}
+    case 'delete':
+        if (isset($_GET['netid'])) {
+            $networks = array($_GET['netid']);
+        } elseif (isset($_POST['routednetwork']) && is_array($_POST['routednetwork'])) {
+            $networks = $_POST['routednetwork'];
+        }
+        $LMS->deleteNodeRoutedNetworks(array(
+            'nodeid' => $_POST['nodeid'],
+            'networks' => $networks
+        ));
+        break;
 }
+
+$SESSION->redirect('?' . $SESSION->get('backto'));

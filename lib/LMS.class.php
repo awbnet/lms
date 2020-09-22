@@ -1162,6 +1162,30 @@ class LMS
         return $manager->getNodeCustomerAssignments($nodeid, $assignments);
     }
 
+    public function getNodeRoutedNetworks($nodeid)
+    {
+        $manager = $this->getNodeManager();
+        return $manager->getNodeRoutedNetworks($nodeid);
+    }
+
+    public function getNodeNotRoutedNetworks($nodeid)
+    {
+        $manager = $this->getNodeManager();
+        return $manager->getNodeNotRoutedNetworks($nodeid);
+    }
+
+    public function addNodeRoutedNetworks(array $params)
+    {
+        $manager = $this->getNodeManager();
+        return $manager->addNodeRoutedNetworks($params);
+    }
+
+    public function deleteNodeRoutedNetworks(array $params)
+    {
+        $manager = $this->getNodeManager();
+        return $manager->deleteNodeRoutedNetworks($params);
+    }
+
     /*
      *  Tarrifs and finances
      */
@@ -1775,6 +1799,12 @@ class LMS
     {
         $manager = $this->getNetDevManager();
         return $manager->getNetDevCustomerAssignments($netdevid, $assignments);
+    }
+
+    public function getNetDevOwnerByNodeId($nodeid)
+    {
+        $manager = $this->getNetDevManager();
+        return $manager->getNetDevOwnerByNodeId($nodeid);
     }
 
     public function GetNetNode($id)
