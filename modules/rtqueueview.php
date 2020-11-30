@@ -179,6 +179,32 @@ if (isset($_GET['pids'])) {
     }
 }
 
+// customerid
+if (isset($_GET['cid'])) {
+    $filter['cid'] = intval($_GET['cid']);
+} elseif (!isset($filter['cid'])) {
+    $filter['cid'] = null;
+}
+
+// subject
+if (isset($_GET['subject'])) {
+    $filter['subject'] = $_GET['subject'];
+} elseif (!isset($filter['subject'])) {
+    $filter['subject'] = null;
+}
+
+// created from and created to dates
+if (isset($_GET['fromdate'])) {
+    $filter['fromdate'] = datetime_to_timestamp($_GET['fromdate']);
+} elseif (!isset($filter['fromdate'])) {
+    $filter['fromdate'] = null;
+}
+if (isset($_GET['todate'])) {
+    $filter['todate'] = datetime_to_timestamp($_GET['todate']);
+} elseif (!isset($filter['todate'])) {
+    $filter['todate'] = null;
+}
+
 // types
 if (isset($_GET['tt'])) {
     if (is_array($_GET['tt'])) {
@@ -337,6 +363,12 @@ unset($queue['parentids']);
 unset($queue['rights']);
 unset($queue['verifier']);
 unset($queue['netnode']);
+unset($queue['projectids']);
+unset($queue['cid']);
+unset($queue['subject']);
+unset($queue['fromdate']);
+unset($queue['todate']);
+
 
 $queues = $LMS->GetQueueList(array('stats' => false));
 $categories = $LMS->GetUserCategories(Auth::GetCurrentUser());

@@ -78,8 +78,9 @@ if (isset($_GET['id']) && $action == 'edit') {
             $nitem['s_valuebrutto'] = $iitem['total'];
         } else {
             $nitem['count']     = str_replace(',', '.', $item['count']);
-            $nitem['discount']  = (!empty(floatval($item['pdiscount'])) ? str_replace(',', '.', $item['pdiscount']) : str_replace(',', '.', $item['vdiscount']));
-            $nitem['discount_type'] = (!empty(floatval($item['pdiscount'])) ? DISCOUNT_PERCENTAGE : DISCOUNT_AMOUNT);
+            $pdiscount = floatval($item['pdiscount']);
+            $nitem['discount']  = (!empty($pdiscount) ? str_replace(',', '.', $item['pdiscount']) : str_replace(',', '.', $item['vdiscount']));
+            $nitem['discount_type'] = (!empty($pdiscount) ? DISCOUNT_PERCENTAGE : DISCOUNT_AMOUNT);
             $nitem['pdiscount'] = str_replace(',', '.', $item['pdiscount']);
             $nitem['vdiscount'] = str_replace(',', '.', $item['vdiscount']);
             $nitem['content']       = str_replace(',', '.', $item['content']);
@@ -101,6 +102,7 @@ if (isset($_GET['id']) && $action == 'edit') {
     $cnote['oldnumber'] = $cnote['number'];
     $cnote['oldnumberplanid'] = $cnote['numberplanid'];
     $cnote['oldcustomerid'] = $cnote['customerid'];
+    $cnote['oldflags'] = $cnote['flags'];
     $cnote['oldcurrency'] = $cnote['currency'];
 
     $hook_data = array(
@@ -149,6 +151,7 @@ switch ($action) {
         $oldnumber = $cnote['oldnumber'];
         $oldnumberplanid = $cnote['oldnumberplanid'];
         $oldcustomerid = $cnote['oldcustomerid'];
+        $oldflags = $cnote['oldflags'];
         $oldcurrency = $cnote['oldcurrency'];
 
         $oldcnote = $cnote;
@@ -169,11 +172,16 @@ switch ($action) {
             $cnote['flags'][DOC_FLAG_RECEIPT] = 0;
         }
 
+        if (!isset($cnote['flags'][DOC_FLAG_TELECOM_SERVICE])) {
+            $cnote['flags'][DOC_FLAG_TELECOM_SERVICE] = 0;
+        }
+
         $cnote['oldcdate'] = $oldcdate;
         $cnote['oldsdate'] = $oldsdate;
         $cnote['oldnumber'] = $oldnumber;
         $cnote['oldnumberplanid'] = $oldnumberplanid;
         $cnote['oldcustomerid'] = $oldcustomerid;
+        $cnote['oldflags'] = $oldflags;
         $cnote['oldcurrency'] = $oldcurrency;
 
         $invoice = $oldcnote['invoice'];
@@ -500,7 +508,11 @@ switch ($action) {
             break;
         }
 
-        $cnote['currencyvalue'] = $LMS->getCurrencyValue($cnote['currency'], $sdate);
+        $cnote['currencyvalue'] = $LMS->getCurrencyValue(
+            $cnote['currency'],
+            strtotime('yesterday', min($sdate, $cdate, time()))
+        );
+
         if (!isset($cnote['currencyvalue'])) {
             die('Fatal error: couldn\'t get quote for ' . $cnote['currency'] . ' currency!<br>');
         }
@@ -553,7 +565,12 @@ switch ($action) {
             'paytime' => $paytime,
             'paytype' => $cnote['paytype'],
             'splitpayment' => $cnote['splitpayment'],
-            'flags' => empty($cnote['flags'][DOC_FLAG_RECEIPT]) ? 0 : DOC_FLAG_RECEIPT,
+            'flags' => (empty($cnote['flags'][DOC_FLAG_RECEIPT]) ? 0 : DOC_FLAG_RECEIPT)
+                + (empty($cnote['flags'][DOC_FLAG_TELECOM_SERVICE]) || $customer['type'] == CTYPES_COMPANY ? 0 : DOC_FLAG_TELECOM_SERVICE)
+                + ($use_current_customer_data
+                    ? (isset($customer['flags'][CUSTOMER_FLAG_RELATED_ENTITY]) ? DOC_FLAG_RELATED_ENTITY : 0)
+                    : (!empty($cnote['oldflags'][DOC_FLAG_RELATED_ENTITY]) ? DOC_FLAG_RELATED_ENTITY : 0)
+                ),
             SYSLOG::RES_CUST => $cnote['customerid'],
             'name' => $use_current_customer_data ? $customer['customername'] : $cnote['name'],
             'address' => $use_current_customer_data ? (($customer['postoffice'] && $customer['postoffice'] != $customer['city'] && $customer['street']
@@ -746,10 +763,13 @@ if (!empty($contents)) {
     }
 }
 
-$SMARTY->assign('is_split_payment_suggested', $LMS->isSplitPaymentSuggested(
-    $cnote['customerid'],
-    date('Y/m/d', $cnote['cdate']),
-    $total_value
+$SMARTY->assign('suggested_flags', array(
+    'splitpayment' => $LMS->isSplitPaymentSuggested(
+        $cnote['customerid'],
+        date('Y/m/d', $cnote['cdate']),
+        $total_value
+    ),
+    'telecomservice' => true,
 ));
 
 $SMARTY->display('invoice/invoicenotemodify.html');

@@ -101,6 +101,8 @@ if (isset($_GET['id']) && $action == 'init') {
     $cnote['splitpayment'] = $invoice['splitpayment'];
     $cnote['flags'] = array(
         DOC_FLAG_RECEIPT => empty($invoice['flags'][DOC_FLAG_RECEIPT]) ? 0 : 1,
+        DOC_FLAG_TELECOM_SERVICE => empty($invoice['flags'][DOC_FLAG_TELECOM_SERVICE]) ? 0 : 1,
+        DOC_FLAG_RELATED_ENTITY => empty($invoice['flags'][DOC_FLAG_RELATED_ENTITY]) ? 0 : 1,
     );
     $cnote['currency'] = $invoice['currency'];
     $cnote['oldcurrency'] = $invoice['currency'];
@@ -153,16 +155,10 @@ $layout['pagetitle'] = trans('Credit Note for Invoice: $a', $ntempl);
 
 switch ($action) {
     case 'deletepos':
-        if ($invoice['closed']) {
-            break;
-        }
         $contents[$_GET['itemid']]['deleted'] = true;
         break;
 
     case 'recoverpos':
-        if ($invoice['closed']) {
-            break;
-        }
         $contents[$_GET['itemid']]['deleted'] = false;
         break;
 
@@ -501,7 +497,10 @@ switch ($action) {
             break;
         }
 
-        $cnote['currencyvalue'] = $LMS->getCurrencyValue($cnote['currency'], $cnote['sdate']);
+        $cnote['currencyvalue'] = $LMS->getCurrencyValue(
+            $cnote['currency'],
+            strtotime('yesterday', min($cnote['sdate'], $cnote['cdate'], time()))
+        );
         if (!isset($cnote['currencyvalue'])) {
             die('Fatal error: couldn\'t get quote for ' . $cnote['currency'] . ' currency!<br>');
         }
@@ -578,7 +577,12 @@ switch ($action) {
             'paytime' => $cnote['paytime'],
             'paytype' => $cnote['paytype'],
             'splitpayment' => empty($cnote['splitpayment']) ? 0 : 1,
-            'flags' => empty($cnote['flags'][DOC_FLAG_RECEIPT]) ? 0 : DOC_FLAG_RECEIPT,
+            'flags' => (empty($cnote['flags'][DOC_FLAG_RECEIPT]) ? 0 : DOC_FLAG_RECEIPT)
+                + (empty($cnote['flags'][DOC_FLAG_TELECOM_SERVICE]) || $customer['type'] == CTYPES_COMPANY ? 0 : DOC_FLAG_TELECOM_SERVICE)
+                + ($use_current_customer_data
+                    ? (isset($customer['flags'][CUSTOMER_FLAG_RELATED_ENTITY]) ? DOC_FLAG_RELATED_ENTITY : 0)
+                    : (!empty($invoice['flags'][DOC_FLAG_RELATED_ENTITY]) ? DOC_FLAG_RELATED_ENTITY : 0)
+                ),
             SYSLOG::RES_USER => Auth::GetCurrentUser(),
             SYSLOG::RES_CUST => $invoice['customerid'],
             'name' => $use_current_customer_data ? $customer['customername'] : $invoice['name'],
@@ -752,10 +756,13 @@ if (!empty($contents)) {
     }
 }
 
-$SMARTY->assign('is_split_payment_suggested', $LMS->isSplitPaymentSuggested(
-    $invoice['customerid'],
-    date('Y/m/d', $cnote['cdate']),
-    $total_value
+$SMARTY->assign('suggested_flags', array(
+    'splitpayment' => $LMS->isSplitPaymentSuggested(
+        $invoice['customerid'],
+        date('Y/m/d', $cnote['cdate']),
+        $total_value
+    ),
+    'telecomservice' => true,
 ));
 
 $SMARTY->display('invoice/invoicenotemodify.html');

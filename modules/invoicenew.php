@@ -87,6 +87,8 @@ function changeContents($contents, $newcontents)
     return $result;
 }
 
+$value_regexp = ConfigHelper::checkConfig('invoices.allow_negative_values') ? '/^[-]?[0-9]+([\.,][0-9]+)*$/' : '/^[0-9]+([\.,][0-9]+)*$/';
+
 switch ($action) {
     case 'init':
         unset($invoice);
@@ -215,11 +217,11 @@ switch ($action) {
             $error[str_replace('%variable', 'valuebrutto', $error_index)] = trans('Field cannot be empty!');
         } else {
             $itemdata['valuenetto'] = cleanUpValue($itemdata['valuenetto']);
-            if (strlen($itemdata['valuenetto']) && !preg_match('/^[0-9]+([\.,][0-9]+)*$/', $itemdata['valuenetto'])) {
+            if (strlen($itemdata['valuenetto']) && !preg_match($value_regexp, $itemdata['valuenetto'])) {
                 $error[str_replace('%variable', 'valuenetto', $error_index)] = trans('Invalid format!');
             }
             $itemdata['valuebrutto'] = cleanUpValue($itemdata['valuebrutto']);
-            if (strlen($itemdata['valuebrutto']) && !preg_match('/^[0-9]+([\.,][0-9]+)*$/', $itemdata['valuebrutto'])) {
+            if (strlen($itemdata['valuebrutto']) && !preg_match($value_regexp, $itemdata['valuebrutto'])) {
                 $error[str_replace('%variable', 'valuebrutto', $error_index)] = trans('Invalid format!');
             }
         }
@@ -537,7 +539,10 @@ switch ($action) {
             break;
         }
 
-        $invoice['currencyvalue'] = $LMS->getCurrencyValue($invoice['currency'], $invoice['sdate']);
+        $invoice['currencyvalue'] = $LMS->getCurrencyValue(
+            $invoice['currency'],
+            strtotime('yesterday', min($invoice['sdate'], $invoice['cdate'], time()))
+        );
         if (!isset($invoice['currencyvalue'])) {
             die('Fatal error: couldn\'t get quote for ' . $invoice['currency'] . ' currency!<br>');
         }
@@ -741,10 +746,13 @@ if (!empty($contents)) {
     }
 }
 
-$SMARTY->assign('is_split_payment_suggested', $LMS->isSplitPaymentSuggested(
-    isset($customer) ? $customer['id'] : null,
-    date('Y/m/d', $invoice['cdate']),
-    $total_value
+$SMARTY->assign('suggested_flags', array(
+    'splitpayment' => $LMS->isSplitPaymentSuggested(
+        isset($customer) ? $customer['id'] : null,
+        date('Y/m/d', $invoice['cdate']),
+        $total_value
+    ),
+    'telecomservice' => true,
 ));
 
 $SMARTY->display('invoice/invoicenew.html');
