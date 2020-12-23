@@ -29,8 +29,8 @@ use setasign\Fpdi\PdfParser\StreamReader;
 
 function invoice_body($document, $invoice)
 {
-    if(ConfigHelper::checkValue(ConfigHelper::getConfig('invoices.use_customer_lang', true))){
-	Localisation::setUiLanguage($invoice['lang']);
+    if (ConfigHelper::checkValue(ConfigHelper::getConfig('invoices.use_customer_lang', true))) {
+        Localisation::setUiLanguage($invoice['lang']);
     }
     $document->Draw($invoice);
     if (!isset($invoice['last'])) {
@@ -362,7 +362,7 @@ if (isset($_GET['print']) && $_GET['print'] == 'cached') {
             //$jpk_vat_version = $datefrom < mktime(0, 0, 0, 1, 1, 2018) ? 2 : 3;
             // if current date is earlier than 1 I 2018
             //$jpk_vat_version = time() < mktime(0, 0, 0, 1, 1, 2018) ? 2 : 3;
-            $jpk_vat_version = (time() < mktime(0, 0, 0, 11, 1, 2020) ? 3 : 4);
+            $jpk_vat_version = ($dateto < mktime(0, 0, 0, 10, 1, 2020) ? 3 : 4);
         } else {
             // if date from for report is earlier than 2 XII 2019
             //$jpk_fa_version = $datefrom < mktime(0, 0, 0, 12, 2, 2019) ? 2 : 3;
@@ -545,7 +545,7 @@ if (isset($_GET['print']) && $_GET['print'] == 'cached') {
                 $jpkrow++;
                 $ten = empty($invoice['ten']) ? 'brak' : preg_replace('/[\s\-]/', '', $invoice['ten']);
                 $jpk_data .= "\t\t<NrKontrahenta>" . $ten . "</NrKontrahenta>\n";
-                $jpk_data .= "\t\t<NazwaKontrahenta>" . htmlspecialchars($invoice['name']) . "</NazwaKontrahenta>\n";
+                $jpk_data .= "\t\t<NazwaKontrahenta><![CDATA[" . $invoice['name'] . "]]></NazwaKontrahenta>\n";
                 if ($jpk_vat_version == 3) {
                     $jpk_data .= "\t\t<AdresKontrahenta>" . ($invoice['postoffice'] && $invoice['postoffice'] != $invoice['city'] && $invoice['street'] ? $invoice['city'] . ', ' : '')
                         . $invoice['address'] . ', ' . (empty($invoice['zip']) ? '' : $invoice['zip'] . ' ') . ($invoice['postoffice'] ? $invoice['postoffice'] : $invoice['city']) . "</AdresKontrahenta>\n";
@@ -1212,6 +1212,7 @@ if (isset($_GET['print']) && $_GET['print'] == 'cached') {
 if (!is_null($attachment_name) && isset($docnumber)) {
     $attachment_name = str_replace('%number', $docnumber, $attachment_name);
     $attachment_name = preg_replace('/[^[:alnum:]_\.]/i', '_', $attachment_name);
+    $attachment_name .= '.' . ($invoice_type == 'pdf' ? 'pdf' : 'html');
 } elseif ($jpk) {
     if ($jpk_type == 'fa') {
         $attachment_name = 'JPK_FA_' . date('Y-m-d', $datefrom) . '_' . date('Y-m-d', $dateto)

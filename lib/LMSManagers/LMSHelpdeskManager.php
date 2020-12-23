@@ -121,13 +121,14 @@ class LMSHelpdeskManager extends LMSManager implements LMSHelpdeskManagerInterfa
      *              type, createtime,
      *          supported orders:
      *          asc = ascending, desc = descending
+     *      short - returned only ticket data (default: null, type: boolean),
      * @return mixed
      */
     public function GetQueueContents(array $params)
     {
         extract($params);
         foreach (array('ids', 'state', 'priority', 'owner', 'catids', 'removed', 'netdevids', 'netnodeids', 'deadline',
-            'serviceids', 'typeids', 'unread', 'parentids', 'verifierids', 'rights', 'projectids', 'cid', 'subject', 'fromdate', 'todate') as $var) {
+            'serviceids', 'typeids', 'unread', 'parentids', 'verifierids', 'rights', 'projectids', 'cid', 'subject', 'fromdate', 'todate', 'short') as $var) {
             if (!isset($$var)) {
                 $$var = null;
             }
@@ -208,11 +209,11 @@ class LMSHelpdeskManager extends LMSManager implements LMSHelpdeskManagerInterfa
         }
 
         if (empty($netdevids)) {
-                        $netdevidsfilter = '';
+            $netdevidsfilter = '';
         } elseif (is_array($netdevids)) {
-                        $netdevidsfilter = ' AND t.netdevid IN (' . implode(',', $netdevids) . ')';
+            $netdevidsfilter = ' AND t.netdevid IN (' . implode(',', $netdevids) . ')';
         } else {
-            $netdevidsfilter = ' AND t.netdevid = '.$netdevids;
+            $netdevidsfilter = ' AND t.netdevid = ' . $netdevids;
         }
 
         if (empty($netnodeids)) {
@@ -606,20 +607,22 @@ class LMSHelpdeskManager extends LMSManager implements LMSHelpdeskManagerInterfa
             unset($ticket);
         }
 
-        $result['total'] = empty($result) ? 0 : count($result);
-        $result['state'] = $state;
-        $result['order'] = $order;
-        $result['direction'] = $direction;
-        $result['owner'] = $owner;
-        $result['removed'] = $removed;
-        $result['priority'] = $priority;
-        $result['deadline'] = $deadline;
-        $result['service'] = $serviceids;
-        $result['type'] = $typeids;
-        $result['unread'] = $unread;
-        $result['rights'] = $rights;
-        $result['fromdate'] = $fromdate;
-        $result['todate'] = $todate;
+        if (!$short) {
+            $result['total'] = empty($result) ? 0 : count($result);
+            $result['state'] = $state;
+            $result['order'] = $order;
+            $result['direction'] = $direction;
+            $result['owner'] = $owner;
+            $result['removed'] = $removed;
+            $result['priority'] = $priority;
+            $result['deadline'] = $deadline;
+            $result['service'] = $serviceids;
+            $result['type'] = $typeids;
+            $result['unread'] = $unread;
+            $result['rights'] = $rights;
+            $result['fromdate'] = $fromdate;
+            $result['todate'] = $todate;
+        }
 
         return $result;
     }
@@ -1446,6 +1449,9 @@ class LMSHelpdeskManager extends LMSManager implements LMSHelpdeskManagerInterfa
         if ($ticket['queueid'] != $props['queueid'] && isset($props['queueid'])) {
             $notes[] = trans('Ticket has been moved from queue $a to queue $b.', $LMS->GetQueueName($ticket['queueid']), $LMS->GetQueueName($props['queueid']));
             $type = $type | RTMESSAGE_QUEUE_CHANGE;
+            if (ConfigHelper::checkConfig('rt.ticket_queue_change_resets_ticket_state') && $ticket['state'] != RT_VERIFIED && $ticket['state'] != RT_RESOLVED) {
+                $props['state'] = RT_NEW;
+            }
         } else {
             $props['queueid'] = $ticket['queueid'];
         }

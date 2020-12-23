@@ -24,6 +24,8 @@
  *  $Id$
  */
 
+$_LANG['new document customer notification'] = 'powiadomienie klienta o nowym dokumencie';
+
 $_LANG['- select target network device -'] = '- wybierz docelowe urządzenie sieciowe -';
 
 $_LANG['(customer/sms)'] = '(klient/SMS)';
@@ -159,9 +161,10 @@ $_LANG['If verifier is set then he\'s the only person who can change deadline!']
 $_LANG['Instalation'] = 'Instalacja';
 $_LANG['Deinstalation'] = 'Demontaż';
 $_LANG['Modification'] = 'Modyfikacja';
-$_LANG['Start service'] = 'Uruchomienie usługi';
-$_LANG['Hold service'] = 'Wstrzymanie usługi';
-$_LANG['Transfer service'] = 'Przeniesienie usługi';
+$_LANG['Service Start'] = 'Uruchomienie usługi';
+$_LANG['Service Hold'] = 'Wstrzymanie usługi';
+$_LANG['Service Transfer'] = 'Przeniesienie usługi';
+$_LANG['No Service'] = 'Brak usługi';
 $_LANG['Overdue events'] = 'Zaległe zdarzenia';
 $_LANG['Overdue events assigned to You'] = 'Zaległe zdarzenia przypisane do Ciebie';
 $_LANG['Copy'] = 'Kopiuj';
@@ -2572,6 +2575,11 @@ $_LANG['Select country state (optional)'] = 'Wybierz województwo (opcjonalnie)'
 $_LANG['- all states -'] = '- wszystkie -';
 $_LANG['Country state:'] = 'Województwo:';
 $_LANG['customers to groups assignment'] = 'przypisywanie klientów do grup';
+$_LANG['Assigned Customer'] = 'Przypisany klient';
+$_LANG['VLAN List'] = 'Lista VLAN-ów';
+$_LANG['VLAN Description'] = 'Opis VLAN-u';
+$_LANG['Add VLAN'] = 'Dodaj VLAN';
+$_LANG['Modify VLAN'] = 'Modyfikuj VLAN';
 $_LANG['nodes to groups assignment'] = 'przypisywanie komputerów do grup';
 $_LANG['Address is required!'] = 'Adres jest wymagany!';
 $_LANG['Add division'] = 'Nowa firma';
@@ -5015,3 +5023,5 @@ $_LANG['Penalty'] = 'Kara';
 
 $_LANG['Select network device type'] = 'Wybierz typ urządzenia sieciowego';
 $_LANG['<!netdevtype>- undefined -'] = '- nieokreślony -';
+
+$_LANG['Starting balance at $a'] = 'Saldo początkowe na dzień $a';

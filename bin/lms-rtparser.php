@@ -91,7 +91,7 @@ lms-rtparser.php
 -s, --silent                    suppress any output, except errors;
 -q, --queue=<queueid>           queue ID (it means, QUEUE ID, numeric! NOT NAME! also
                                 its required to run!);
--m, --message-file=<messag-file>
+-m, --message-file=<message-file>
                                 use message file instead of standard input;
     --use-html                  use html content type and load it to database if it's present
     --imap
@@ -181,7 +181,8 @@ $queue = 0;
 if (isset($options['queue'])) {
     $queue = $options['queue'];
 }
-$queue = ConfigHelper::getConfig('rt.default_queue', $queue);
+$queue = ConfigHelper::getConfig('rt.parser_default_queue', ConfigHelper::getConfig('rt.default_queue', $queue));
+
 if (preg_match('/^[0-9]+$/', $queue)) {
     $queue = intval($queue);
     if ($queue && !$LMS->QueueExists($queue)) {
@@ -318,8 +319,8 @@ if ($mode == MODE_IMAP) {
     }
 }
 
-while (isset($buffer) || $postid !== false) {
-    if ($postid !== false) {
+while (isset($buffer) || ($postid !== false && $postid !== null)) {
+    if ($postid !== false && $postid !== null) {
         $buffer = imap_fetchbody($ih, $postid, '');
 
         if ($rtparser_use_seen_flag) {
@@ -867,7 +868,7 @@ while (isset($buffer) || $postid !== false) {
         }
     }
 
-    if ($postid !== false) {
+    if ($postid !== false && $postid !== null) {
         if ($rtparser_use_seen_flag) {
             imap_setflag_full($ih, $postid, "\\Seen");
         } else {

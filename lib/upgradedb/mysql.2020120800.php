@@ -1,9 +1,9 @@
+<?php
+
 /*
  * LMS version 1.11-git
  *
  *  (C) Copyright 2001-2020 LMS Developers
- *
- *  Please, see the doc/AUTHORS for more information about authors!
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License Version 2 as
@@ -19,14 +19,15 @@
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307,
  *  USA.
  *
- *  $Id$
  */
 
-$(function() {
-    $('.delete-event').click(function () {
-        confirmDialog($t("Are you sure, you want to delete that event?"), this).done(function () {
-            location.href = $(this).attr('href');
-        });
-        return false;
-    });
-});
+$this->BeginTrans();
+
+$this->Execute(
+    "INSERT INTO uiconfig (section, var, value) VALUES (?, ?, ?)",
+    array('userpanel', 'pin_validation', 'true')
+);
+
+$this->Execute("UPDATE dbinfo SET keyvalue = ? WHERE keytype = ?", array('2020120800', 'dbversion'));
+
+$this->CommitTrans();
