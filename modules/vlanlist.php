@@ -30,19 +30,20 @@ $id = $_GET['id'];
 $addvlan = $_POST['addvlan'];
 $layout['pagetitle'] = trans('VLAN List');
 
-$vlanlist = $LMS->GetVlanList();
+$params['orderby'] = $_GET['orderby'];
+
+$vlanlist = $LMS->GetVlanList($params);
 $vlaninfo = $LMS->GetVlanInfo($id);
 
 switch ($action) {
     case 'add':
-        if (!empty($addvlan['vlanid']) && !empty($addvlan['description'])) {
+        if (!empty($addvlan['vlanid'])) {
             $LMS->AddVlan($addvlan);
             $SESSION->redirect('?m=vlanlist');
         }
         break;
     case 'modify':
-        if (!empty($id) && !empty($addvlan)) {
-            print_r($addvlan);
+        if (!empty($id) && isset($addvlan)) {
             $LMS->UpdateVlan($addvlan);
             $SESSION->redirect('?m=vlanlist');
         }

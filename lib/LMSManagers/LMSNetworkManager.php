@@ -122,7 +122,7 @@ class LMSNetworkManager extends LMSManager implements LMSNetworkManagerInterface
             'dhcpstart' => $netadd['dhcpstart'],
             'dhcpend' => $netadd['dhcpend'],
             'notes' => $netadd['notes'],
-            'vlanid' => intval($netadd['vlanid']),
+            'vlanid' => empty($netadd['vlanid']) ? null : intval($netadd['vlanid']),
             SYSLOG::RES_HOST => $netadd['hostid'],
             'authtype' => $netadd['authtype'],
             'snat' => !empty($netadd['snat']) ? $netadd['snat'] : null,
@@ -483,7 +483,7 @@ class LMSNetworkManager extends LMSManager implements LMSNetworkManagerInterface
             'address' => $networkdata['address'],
             'mask' => $networkdata['mask'],
             'interface' => strtolower($networkdata['interface']),
-            'vlanid' => intval($networkdata['vlanid']),
+            'vlanid' => empty($networkdata['vlanid']) ? null : intval($networkdata['vlanid']),
             'gateway' => $networkdata['gateway'],
             'dns' => $networkdata['dns'],
             'dns2' => $networkdata['dns2'],
@@ -882,13 +882,36 @@ class LMSNetworkManager extends LMSManager implements LMSNetworkManagerInterface
         return $ip;
     }
 
-    public function GetVlanList()
+    public function GetVlanList($params = array())
     {
+        if (!empty($params)) {
+            extract($params);
+        }
+
+        switch ($orderby) {
+            case 'id':
+                $orderby = ' ORDER BY vl.id ';
+                break;
+            case 'vlanid':
+                $orderby = ' ORDER BY vlanid ';
+                break;
+            case 'description':
+                $orderby = ' ORDER BY description ';
+                break;
+            case 'customerid':
+                $orderby = ' ORDER BY customerid ';
+                break;
+            default:
+                $orderby = ' ORDER BY id ';
+                break;
+        }
+
         return $this->db->GetAllByKey(
             'SELECT vl.id, vlanid, description, customerid, '
             . $this->db->Concat('cv.lastname', "' '", 'cv.name') . ' AS customername
             FROM vlans AS vl
-            LEFT JOIN customers cv ON (vl.customerid = cv.id)',
+            LEFT JOIN customers cv ON (vl.customerid = cv.id)'
+            . $orderby,
             'id'
         );
     }
@@ -909,7 +932,7 @@ class LMSNetworkManager extends LMSManager implements LMSNetworkManagerInterface
     {
         $args = array(
             'vlanid' => $args['vlanid'],
-            'description' => $args['description'],
+            'description' => !empty($args['description']) ? $args['description'] : null,
             'customerid' => !empty($args['customerid']) ? $args['customerid'] : null,
         );
 
@@ -944,20 +967,23 @@ class LMSNetworkManager extends LMSManager implements LMSNetworkManagerInterface
             $props = array(
                 'id' => $props['id'],
                 'vlanid' => isset($props['vlanid']) ? $props['vlanid'] : null,
-                'description' => isset($props['description']) ? $props['description'] : null,
-                'customerid' => empty($props['customerid']) ? null : $props['customerid'],
+                'description' => !empty($props['description']) ? $props['description'] : null,
+                'customerid' => !empty($props['customerid']) ? $props['customerid'] : null
             );
 
             $vlaninfo = $this->GetVlanInfo($props['id']);
             unset($vlaninfo['customername']);
-            $diff = array_diff($props, $vlaninfo);
 
-            if (!empty($diff)) {
-                $diff['id'] = $props['id'];
+            $diff = array_diff($vlaninfo, $props);
+            $diff2 = array_diff($props, $vlaninfo);
+            if (!empty($diff) || !empty($diff2)) {
                 $result = $this->db->Execute(
                     'UPDATE vlans SET vlanid = ?, description = ?, customerid = ? WHERE id = ?',
                     array($props['vlanid'], $props['description'], $props['customerid'], $props['id'])
                 );
+                $diff = Utils::array_keys_add_prefix($diff);
+                $diff = array_merge($diff, $diff2);
+                $diff['id'] = $props['id'];
                 if ($result && $this->syslog) {
                     $this->syslog->AddMessage(SYSLOG::RES_VLAN, SYSLOG::OPER_UPDATE, $diff);
                 }
