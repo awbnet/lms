@@ -10,9 +10,6 @@
 		{$pin_tip=trans("Enter \$a to \$b characters PIN code", $pin_min_size, $pin_max_size)}
 	{/if}
 {/if}
-
-{$gusapi_key = ConfigHelper::getConfig('phpui.gusapi_key')}
-
 <H1>{$layout.pagetitle}</H1>
 <script type="text/javascript" src="js/location_box_expandable.js"></script>
 <SCRIPT type="text/javascript">
@@ -153,8 +150,18 @@
 						<IMG SRC="img/folder.gif" alt="">
 					</TD>
 					<TD>
-						<INPUT type="radio" name="customeradd[type]" value="{$smarty.const.CTYPES_PRIVATE}" id="private" {tip text="Select legal personality type" trigger="type"}{if $customeradd.type == $smarty.const.CTYPES_PRIVATE} CHECKED{/if}><label for="private">{assign var='type' value=$smarty.const.CTYPES_PRIVATE}{$_CTYPES.$type}</label>
-						<INPUT type="radio" name="customeradd[type]" value="{$smarty.const.CTYPES_COMPANY}" id="company" {tip text="Select legal personality type" trigger="type"}{if $customeradd.type == $smarty.const.CTYPES_COMPANY} CHECKED{/if}><label for="company">{assign var='type' value=$smarty.const.CTYPES_COMPANY}{$_CTYPES.$type}</label>
+						<label>
+							<input type="radio" name="customeradd[type]" value="{$smarty.const.CTYPES_PRIVATE}" id="private"
+								{tip text="Select legal personality type" trigger="type"}
+								{if $customeradd.type == $smarty.const.CTYPES_PRIVATE} checked{/if}>
+							{$_CTYPES[$smarty.const.CTYPES_PRIVATE]}
+						</label>
+						<label>
+							<input type="radio" name="customeradd[type]" value="{$smarty.const.CTYPES_COMPANY}" id="company"
+								{tip text="Select legal personality type" trigger="type"}
+								{if $customeradd.type == $smarty.const.CTYPES_COMPANY} checked{/if}>
+							{$_CTYPES[$smarty.const.CTYPES_COMPANY]}
+						</label>
 					</TD>
 				</TR>
 
@@ -303,7 +310,7 @@
 					</TD>
 					<TD>
 						<INPUT type="text" required size="{$pin_max_size}" value="{if $customeradd.pin}{$customeradd.pin}{/if}" name="customeradd[pin]" {tip text=$pin_tip trigger="pin"}>&nbsp;
-						{button href="javascript:randomize()" label="Generate PIN" icon="generate"}
+						<A href="javascript:randomize()" {tip text="Generate random PIN"}>&raquo;&raquo;&raquo;</A>
 					</TD>
 				</TR>
 				<TR>
@@ -317,13 +324,21 @@
                                 <COL style="width: 1%;">
                                 <COL style="width: 99%;">
                             </COLGROUP>
-                            <TR>
-								<TD>{trans("ICN")}:</TD>
+							<TR>
+								<TD class="nobr">{trans("Identity type:")}</TD>
 								<TD>
-									{if $customeradd.icnwarning}
-									<INPUT type="hidden" name="customeradd[icnwarning]" value="1">
+									{identitytypes elemname="customeradd[ict]" selected=$customerinfo.ict
+									tip="Select identity type" trigger="ict"}
+								</TD>
+							</TR>
+							<TR>
+								<TD class="nobr">{trans("Identity number:")}</TD>
+								<TD>
+									{if $customerinfo.icnwarning}
+										<INPUT type="hidden" name="customeradd[icnwarning]" value="1">
 									{/if}
-									<INPUT type="text" size="30" value="{$customeradd.icn}" name="customeradd[icn]" {tip text="Enter Identity Card Number (optional)" trigger="icn"}>
+									<INPUT type="text" value="{$customeradd.icn}" name="customeradd[icn]" size="30"
+											{tip text="Enter identity number (optional)" trigger="icn"}>
 								</TD>
 							</TR>
 							<TR>
@@ -348,18 +363,14 @@
 									{if $customeradd.tenexistencewarning}
 									<INPUT type="hidden" name="customeradd[tenexistencewarning]" value="1">
 									{/if}
-									{if !empty($gusapi_key)}
-										{button label="GUS" icon="sync" class="gusapi-button" data-type="{\GusApi\SearchType::NIP}" href="#" tip="Click here to autocomplete company data from GUS REGON database"}
-									{/if}
+									<a class="gusapi-button" data-type="{\GusApi\SearchType::NIP}" href="#" {tip text="Click here to autocomplete company data from GUS REGON database"}>&raquo;&raquo;&raquo;</a>
 								</TD>
 							</TR>
 							<TR>
 								<TD>{trans("REGON")}:</TD>
 								<TD>
 									<INPUT type="text" size="30" value="{$customeradd.regon}" name="customeradd[regon]" {tip text="Enter Business Registration Number (optional)" trigger="regon"}>
-									{if !empty($gusapi_key)}
-										{button label="GUS" icon="sync" class="gusapi-button" data-type="{\GusApi\SearchType::REGON}" href="#" tip="Click here to autocomplete company data from GUS REGON database"}
-									{/if}
+									<a class="gusapi-button" data-type="{\GusApi\SearchType::REGON}" href="#" {tip text="Click here to autocomplete company data from GUS REGON database"}>&raquo;&raquo;&raquo;</a>
 								</TD>
 							</TR>
 							<TR>
@@ -372,9 +383,7 @@
 								<TD>{trans("RBE")}:</TD>
 								<TD>
 									<INPUT type="text" size="30" value="{$customeradd.rbe}" name="customeradd[rbe]" {tip text="Enter National Court Register / Register of Business Entities Number (optional)" trigger="rbe"}>
-									{if !empty($gusapi_key)}
-										{button label="GUS" icon="sync" class="gusapi-button" data-type="{\GusApi\SearchType::KRS}" href="#" tip="Click here to autocomplete company data from GUS REGON database"}
-									{/if}
+									<a class="gusapi-button" data-type="{\GusApi\SearchType::KRS}" href="#" {tip text="Click here to autocomplete company data from GUS REGON database"}>&raquo;&raquo;&raquo;</a>
 								</TD>
 							</TR>
 						</TABLE>
@@ -521,14 +530,10 @@
 	</TBODY>
 </TABLE>
 </FORM>
-<SCRIPT type="text/javascript">
-<!--
+<script>
+
 	$('[name="customeradd[type]"]').change(function() {
-		if ($(this).val() == {$smarty.const.CTYPES_PRIVATE}) {
-			$('.gusapi-button').hide();
-		} else {
-			$('.gusapi-button').show();
-		}
+		$('.gusapi-button').toggle(!$('#private').prop('checked'));
 	}).filter(':checked').change();
 
 	function init_email_validators() {
@@ -558,9 +563,13 @@
 		});
 
 		$('.gusapi-button').click(function() {
+			var identifier = $(this).siblings('input[type="text"]').val().replace(/-/g, '');
+			if (!identifier.length) {
+				return;
+			}
 			GusApiGetCompanyDetails(
 				$(this).attr('data-type'),
-				$(this).siblings('input[type="text"]').val().replace(/-/g, ''),
+				identifier,
 				function(data) {
 					GusApiFinished('customeradd', data);
 				});
@@ -573,6 +582,6 @@
 	});
 
 	if(document.forms['customeradd'].elements['customeradd[pin]'].value == '') randomize();
-//-->
-</SCRIPT>
+
+</script>
 {/block}
