@@ -94,6 +94,8 @@ lms-rtparser.php
 -m, --message-file=<message-file>
                                 use message file instead of standard input;
     --use-html                  use html content type and load it to database if it's present
+    --prefer-html               force html content usage; without this html content is used
+                                only if text/plain content is not present in handled post
     --imap
                                 fetch posts using imap protocol
     --check-mail
@@ -528,6 +530,19 @@ while (isset($buffer) || ($postid !== false && $postid !== null)) {
         }
 
         mailparse_msg_free($mail);
+
+        if ($contenttype != 'text/html') {
+            if (!empty($files)) {
+                foreach ($files as &$file) {
+                    unset($file['content-id']);
+                }
+                unset($file);
+                foreach ($attachments as &$attachment) {
+                    unset($attachment['content-id']);
+                }
+                unset($attachment);
+            }
+        }
 
         $timestamp = time();
 
