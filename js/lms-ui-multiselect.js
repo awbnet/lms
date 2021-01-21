@@ -278,6 +278,7 @@ function multiselect(options) {
 			var exclusive = $(this).attr('data-exclusive');
 			var selected = $(this).is(':selected');
 			var disabled = $(this).is(':disabled');
+			var crossed = $(this).attr('data-crossed');
 			var class_name = 'visible' + (exclusive === '' ? ' exclusive' : '');
 
 			var data = '';
@@ -296,9 +297,11 @@ function multiselect(options) {
 
 			var text = $(this).attr('data-html-content');
 			if (!text) {
-				text = $(this).text();
+				text = escapeHtml($(this).text().trim());
+			} else {
+				text = text.trim();
 			}
-			list += '<span>' + text.trim() + '</span>';
+			list += '<span '+ (crossed === '' ? ' class="lms-ui-crossed"' : '')+'>' + text + '</span>';
 
 			list += '</li>';
 		});

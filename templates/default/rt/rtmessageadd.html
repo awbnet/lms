@@ -55,7 +55,7 @@
 <INPUT type="hidden" name="message[customerid]" value ="{$message.customerid}">
 {box_container id="message"}
 	{box_header icon="img/mail.gif" label="Subject:"}
-		<INPUT type="text" size="75" name="message[subject]" maxlength="255" value="{$message.subject}" {tip text="Enter message subject" trigger="subject"}>
+		<INPUT type="text" size="75" name="message[subject]" maxlength="255" value="{$message.subject|escape}" {tip text="Enter message subject" trigger="subject"}>
 	{/box_header}
 
 	{box_contents}
@@ -225,7 +225,7 @@
 					{if !ConfigHelper::checkConfig('phpui.helpdesk_hide_disabled_users')
 						|| (ConfigHelper::checkConfig('phpui.helpdesk_hide_disabled_users') && $user.access)
 						|| $user.id == $message.owner}
-					<OPTION value="{$user.id}"{if !$user.access} class="blend"{/if}{if $user.id == $message.owner} selected{/if}>{$user.rname} ({$user.login})</OPTION>
+					<OPTION value="{$user.id}"{if !$user.access} class="blend"{/if}{if $user.id == $message.owner} selected{/if}>{$user.rname|escape} ({$user.login})</OPTION>
 					{/if}
 					{/foreach}
 				</SELECT>
@@ -247,7 +247,7 @@
 							{if !ConfigHelper::checkConfig('phpui.helpdesk_hide_disabled_users')
 								|| (ConfigHelper::checkConfig('phpui.helpdesk_hide_disabled_users') && $user.access)
 								|| $user.id == $message.verifierid}
-							<OPTION value="{$user.id}"{if !$user.access} class="blend"{/if}{if $user.id == $message.verifierid} selected{/if}>{$user.rname} ({$user.login})</OPTION>
+							<OPTION value="{$user.id}"{if !$user.access} class="blend"{/if}{if $user.id == $message.verifierid} selected{/if}>{$user.rname|escape} ({$user.login})</OPTION>
 							{/if}
 						{/foreach}
 					</SELECT>

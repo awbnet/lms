@@ -85,8 +85,11 @@
 				<table>
 					<tr>
 						<td>
-							<label for="customeradd[extid]"><strong>{trans("External system identifier:")}</strong>
-								<input type="text" size="20" maxlength="20" name="customeradd[extid]" value="{$customeradd.extid}" {tip text="Enter customer identifier in external system (optional)" trigger="extid"}></label>
+							<label>
+								<strong>{trans("External system identifier:")}</strong>
+								<input type="text" size="20" maxlength="20" name="customeradd[extid]" value="{$customeradd.extid|escape}"
+									{tip text="Enter customer identifier in external system (optional)" trigger="extid"}>
+							</label>
 						</td>
 					</tr>
 				</table>
@@ -124,7 +127,7 @@
 					<TD>
 						<SELECT size="1" name="customeradd[divisionid]" {tip text="Select division" trigger="divisionid"}>
 							{foreach $divisions as $item}{if !$item.status}
-								<option value="{$item.id}"{if $customeradd.divisionid == $item.id} selected{/if}>{$item.label}</option>
+								<option value="{$item.id}"{if $customeradd.divisionid == $item.id} selected{/if}>{$item.label|escape}</option>
 							{/if}{/foreach}
 						</SELECT>
 					</TD>

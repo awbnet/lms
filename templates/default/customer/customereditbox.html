@@ -87,7 +87,8 @@
 					<tr>
 						<td>
 							<label for="customerdata[extid]"><strong>{trans("External system identifier:")}</strong>
-								<input type="text" maxlength="20" name="customerdata[extid]" value="{$customerinfo.extid}" {tip text="Enter customer identifier in external system (optional)" trigger="extid"}>
+								<input type="text" maxlength="20" name="customerdata[extid]" value="{$customerinfo.extid|escape}"
+									{tip text="Enter customer identifier in external system (optional)" trigger="extid"}>
 							</label>
 						</td>
 					</tr>
@@ -127,7 +128,7 @@
 							<SELECT size="1" name="customerdata[divisionid]" {tip text="Select division" trigger="divisionid"}>
 								{foreach $divisions as $item}
 									{if !$item.status || $item.id == $customerinfo.divisionid}
-										<option value="{$item.id}"{if $customerinfo.divisionid == $item.id} selected{/if}>{$item.label}</option>
+										<option value="{$item.id}"{if $customerinfo.divisionid == $item.id} selected{/if}>{$item.label|escape}</option>
 									{/if}
 								{/foreach}
 							</SELECT>
@@ -500,8 +501,8 @@
 							<i class="lms-ui-icon-modified-date"></i>
 						</TD>
 						<TD>
-							<span class="bold">{trans("Created:")}</span> {$customerinfo.createdby}, {$customerinfo.creationdateh}<BR>
-							<span class="bold">{trans("Modified:")}</span> {if $customerinfo.moddate}{$customerinfo.modifiedby}, {$customerinfo.moddateh}{else}-{/if}
+							<span class="bold">{trans("Created:")}</span> {$customerinfo.createdby|escape}, {$customerinfo.creationdateh}<BR>
+							<span class="bold">{trans("Modified:")}</span> {if $customerinfo.moddate}{$customerinfo.modifiedby|escape}, {$customerinfo.moddateh}{else}-{/if}
 						</TD>
 					</TR>
 					{/block}

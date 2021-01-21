@@ -1019,6 +1019,11 @@ class LMSHelpdeskManager extends LMSManager implements LMSHelpdeskManagerInterfa
 
         $createtime = isset($message['createtime']) ? $message['createtime'] : time();
 
+        $body = preg_replace("/\r/", "", $message['body']);
+        if ($message['contenttype'] == 'text/html') {
+            $body = Utils::removeInsecureHtml($body);
+        }
+
         $this->db->Execute(
             'INSERT INTO rtmessages (ticketid, createtime, subject, body, userid, customerid, mailfrom,
 			inreplyto, messageid, replyto, headers, type, phonefrom, contenttype)
@@ -1027,7 +1032,7 @@ class LMSHelpdeskManager extends LMSManager implements LMSHelpdeskManagerInterfa
                 $message['ticketid'],
                 $createtime,
                 isset($message['subject']) ? $message['subject'] : '',
-                preg_replace("/\r/", "", $message['body']),
+                $body,
                 isset($message['userid']) ? $message['userid'] : Auth::GetCurrentUser(),
                 empty($message['customerid']) ? null : $message['customerid'],
                 isset($message['mailfrom']) ? $message['mailfrom'] : '',
@@ -1102,7 +1107,7 @@ class LMSHelpdeskManager extends LMSManager implements LMSHelpdeskManagerInterfa
         if ($ticket['contenttype'] == 'text/plain') {
             $body = str_replace("\r", "", $ticket['body']);
         } else {
-            $body = $ticket['body'];
+            $body = Utils::removeInsecureHtml($ticket['body']);
         }
 
         $this->db->Execute('INSERT INTO rtmessages (ticketid, customerid, createtime,
@@ -2421,6 +2426,10 @@ class LMSHelpdeskManager extends LMSManager implements LMSHelpdeskManagerInterfa
             'ssl_verify_peer' => 'rt.smtp_ssl_verify_peer',
             'ssl_verify_peer_name' => 'rt.smtp_ssl_verify_peer_name',
             'ssl_allow_self_signed' => 'rt.smtp_ssl_allow_self_signed',
+            'smime_certificate' => 'rt.smime_certificate',
+            'smime_key' => 'rt.smime_key',
+            'smime_ca_chain' => 'rt.smime_ca_chain',
+            'smime_sender_email' => 'rt.smime_sender_email',
         );
 
         foreach ($variable_mapping as $option_name => $variable_name) {

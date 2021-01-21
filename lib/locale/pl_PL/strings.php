@@ -24,6 +24,10 @@
  *  $Id$
  */
 
+$_LANG['ignore'] = 'ignoruj';
+
+$_LANG['full calendar periods'] = 'pełne okresy kalendarzowe';
+
 $_LANG['new document customer notification'] = 'powiadomienie klienta o nowym dokumencie';
 
 $_LANG['- select target network device -'] = '- wybierz docelowe urządzenie sieciowe -';
@@ -104,6 +108,7 @@ $_LANG['There is no related tickets'] = 'Brak powiązanych zgłoszeń';
 $_LANG['There is no child tickets'] = 'Brak zgłoszeń podrzędnych';
 $_LANG['Related tickets:'] = 'Powiązane zgłoszenia:';
 $_LANG['Child tickets:'] = 'Podrzędne zgłoszenia:';
+$_LANG['Create child ticket'] = 'Utwórz podrzędne zgłoszenie';
 $_LANG['verified'] = 'weryfikowany';
 $_LANG['Ticket has been transferred to verifier'] = 'Zgłoszenie zostało przekazane do weryfikatora';
 $_LANG['Ticket has been transferred to verifier.'] = 'Zgłoszenie zostało przekazane do weryfikatora.';
@@ -637,6 +642,8 @@ $_LANG['Delete customer\'s liability'] = 'Usuń zobowiązanie klienta';
 $_LANG['deleted<!plural>'] = 'usunięci';
 $_LANG['Delete data older than one year'] = 'Usuń dane starsze niż jeden rok';
 $_LANG['deleted customer'] = 'klient usunięty';
+$_LANG['deleted promotion'] = 'promocja usunięta';
+$_LANG['deleted promotion schema'] = 'schemat promocyjny usunięty';
 $_LANG['Delete Node $a'] = 'Usuń komputer $a';
 $_LANG['Delete stats of non-existing (deleted) nodes'] = 'Usuń statystyki nieistniejących (usuniętych) komputerów';
 $_LANG['Deletion of Database Backup'] = 'Usunięcie kopii zapasowej bazy danych';
@@ -1045,6 +1052,8 @@ $_LANG['Incorrect WINS server IP address!'] = 'Niepoprawny adres IP serwera WINS
 $_LANG['Incorrect ZIP code! If you are sure you want to accept it, then click "Submit" again.'] = 'Niepoprawny kod pocztowy! Jeśli chcesz zaakceptować, to ponownie kliknij "Zapisz".';
 $_LANG['in debt'] = 'zadłużeni';
 $_LANG['in debt (expired)'] = 'zadłużeni (przeterminowane)';
+$_LANG['in debt (expired by more than 30 days)'] = 'zadłużeni (przeterminowane o więcej niż 30 dni)';
+$_LANG['in debt (expired by more than 60 days)'] = 'zadłużeni (przeterminowane o więcej niż 60 dni)';
 $_LANG['Indicator (+R)'] = 'Wskaźniki (+O)';
 $_LANG['Nodes List for Customers In Debt'] = 'Lista komputerów zadłużonych klientów';
 $_LANG['Indebted Customers List $a$b'] = 'Lista klientów zadłużonych $a$b';
@@ -2077,6 +2086,8 @@ $_LANG['Incorrect date!'] = 'Niewłaściwa data!';
 $_LANG['Liability:'] = 'Zobowiązanie:';
 $_LANG['Liability value is required!'] = 'Kwota zobowiązania jest wymagana!';
 $_LANG['Customer ID: $a'] = 'ID klienta: $a';
+$_LANG['Customer ID: %cid'] = 'ID klienta: %cid';
+$_LANG['PIN: %pin'] = 'PIN: %pin';
 $_LANG['Enter balance limit (default 0)'] = 'Wprowadź limit bilansu (domyślnie 0)';
 $_LANG['Transfer forms'] = 'Formularze przelewu';
 $_LANG['Not set'] = 'Nie ustawione';
@@ -2713,6 +2724,8 @@ $_LANG['Max length of auto suggest proposal, further characters will be dotted.'
 $_LANG['Transmitted [B]'] = 'Przesłane dane [B]';
 $_LANG['Customer Timetable:'] = 'Terminarz klienta:';
 $_LANG['Customer Timetable'] = 'Terminarz klienta';
+$_LANG['Show schedule'] = 'Pokaż plan';
+$_LANG['Show timetable'] = 'Pokaż terminarz';
 $_LANG['last $a events'] = 'ostatnie $a zdarzeń';
 $_LANG['There are no events in timetable.'] = 'Brak zdarzeń w terminarzu.';
 $_LANG['There are no open events in timetable.'] = 'Brak otwartych zdarzeń w terminarzu.';
@@ -3095,6 +3108,7 @@ $_LANG['Promotion is indirectly assigned to liabilities, so name change is disab
 $_LANG['Promotion is indirectly assigned to liabilities, change its name can have impact on existing assignments!'] = 'Promocja jest pośrednio przypisana do zobowiązań, zatem zmiana jej nazwy może mieć wpływ na istniejące zobowiązania';
 $_LANG['Schemas:'] = 'Schematy:';
 $_LANG['Schema\'s Tariffs ($a):'] = 'Taryfy schematu ($a)';
+$_LANG['Edit schema'] = 'Edytuj schemat';
 $_LANG['Edit schema tariffs'] = 'Edytuj taryfy schematu';
 $_LANG['Schema Edit: $a'] = 'Edycja schematu: $a';
 $_LANG['Schema Info: $a'] = 'Informacje o schemacie: $a';
@@ -4452,6 +4466,7 @@ $_LANG['<!qs>node name'] = 'nazwa komputera';
 $_LANG['<!qs>ip address'] = 'adres IP';
 $_LANG['<!qs>public ip address'] = 'adres publiczny IP';
 $_LANG['<!qs>mac address'] = 'adres MAC';
+$_LANG['Additional options'] = 'Opcje dodatkowe';
 
 $_LANG['<!qs>device id'] = 'identyfikator urządzenia';
 $_LANG['<!qs>device name'] = 'nazwa urządzenia';
@@ -4993,6 +5008,10 @@ $_LANG['Karma is changed too often!'] = 'Zbyt częsta zmiana karmy!';
 $_LANG['Negative value means customers with karma less or equal than specified, but positive means greater or equal then specified'] = 'Wartość ujemna oznacz wyszukiwanie klientów z karmą mniejszą lub równą od podanej, zaś dodatna większą lub równą od podanej';
 
 $_LANG['Customer notifications'] = 'Powiadomienia klienta';
+$_LANG['New ticket customer notification subject'] = 'Temat powiadomienia klienta o nowym zgłoszeniu';
+$_LANG['New ticket customer notification body'] = 'Treść powiadomienia klienta o nowym zgłoszeniu';
+$_LANG['New message customer notification subject'] = 'Temat powiadomienia klienta o nowej wiadomości';
+$_LANG['New message customer notification body'] = 'Treść powiadomienia klienta o nowej wiadomości';
 $_LANG['Verifier notifications'] = 'Powiadomienia weryfikatora';
 
 $_LANG['<!customer-notification-subject>The following special symbols are supported:<br>'

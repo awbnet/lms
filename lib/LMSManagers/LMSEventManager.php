@@ -34,7 +34,7 @@ class LMSEventManager extends LMSManager implements LMSEventManagerInterface
     {
         $args = array(
             'title' => $event['title'],
-            'description' => $event['description'],
+            'description' => Utils::removeInsecureHtml($event['description']),
             'date' => $event['date'],
             'begintime' => $event['begintime'],
             'enddate' => $event['enddate'],
@@ -89,7 +89,7 @@ class LMSEventManager extends LMSManager implements LMSEventManagerInterface
     {
         $args = array(
             'title' => $event['title'],
-            'description' => $event['description'],
+            'description' => Utils::removeInsecureHtml($event['description']),
             'date' => $event['date'],
             'begintime' => $event['begintime'],
             'enddate' => $event['enddate'],
@@ -416,9 +416,10 @@ class LMSEventManager extends LMSManager implements LMSEventManagerInterface
                 }
 
                 $row['userlist'] = $this->db->GetAll(
-                    'SELECT userid AS id, vusers.name
-					FROM eventassignments, vusers
-					WHERE userid = vusers.id AND eventid = ? ',
+                    'SELECT userid AS id, vusers.name,
+                    vusers.access, vusers.deleted, vusers.accessfrom, vusers.accessto
+                    FROM eventassignments, vusers
+                    WHERE userid = vusers.id AND eventid = ? ',
                     array($row['id'])
                 );
 

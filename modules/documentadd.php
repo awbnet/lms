@@ -347,6 +347,7 @@ if (isset($_POST['document'])) {
                 $selected_assignment['period'] = $period;
                 $selected_assignment['at'] = $at;
                 $selected_assignment['commited'] = isset($document['closed']) ? 1 : 0;
+                $selected_assignment['align-periods'] = isset($document['assignment']['align-periods']);
 
                 if (is_array($selected_assignment['sassignmentid'][$schemaid])) {
                     $modifiedvalues = $selected_assignment['values'][$schemaid];
@@ -418,6 +419,8 @@ if (isset($_POST['document'])) {
             $document['assignment']['settlement'] = 1;
         }
     }
+    $document['assignment']['last-settlement'] = ConfigHelper::checkConfig('phpui.default_assignment_last_settlement');
+    $document['assignment']['align-periods'] = ConfigHelper::checkValue(ConfigHelper::getConfig('phpui.default_assignment_align_periods', true));
     $default_assignment_period = ConfigHelper::getConfig('phpui.default_assignment_period');
     if (!empty($default_assignment_period)) {
         $document['assignment']['period'] = $default_assignment_period;

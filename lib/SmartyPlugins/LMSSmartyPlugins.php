@@ -151,10 +151,10 @@ class LMSSmartyPlugins
                     . (isset($params['form']) ? ' form="' . $params['form'] . '"' : '')
                     . ($onchange ? ' onchange="' . $onchange . '"' : '')
                     . '>';
-                $result .= '<option VALUE=""' . (!$selected ? ' selected' : '') . '>- ' . trans("all") . ' -</option>';
+                $result .= '<option value=""' . (!$selected ? ' selected' : '') . '>- ' . trans("all") . ' -</option>';
                 foreach ($user_divisions as $division) {
                     $result .= '<option value="' . $division['id'] . '"'
-                        . ($selected == $division['id'] ? ' selected' : '') . '>' . $division['label'] . '</option>';
+                        . ($selected == $division['id'] ? ' selected' : '') . '>' . htmlspecialchars($division['label']) . '</option>';
                 }
                 $result .= '</select>';
                 $result .= ($label ? '</label>' : '');
@@ -611,11 +611,11 @@ class LMSSmartyPlugins
 
         $uid = uniqid();
         $location_str = $params['data']['location_address_type'] == BILLING_ADDRESS ? ''
-            : (empty($params['data']['location_name']) ? '' : $params['data']['location_name'] . ', ');
+            : (empty($params['data']['location_name']) ? '' : htmlspecialchars($params['data']['location_name']) . ', ');
 
         $location_str .= $params['data']['location']
             ? ($params['data']['teryt']
-                ? trans('$a (TERRIT)', $params['data']['location']) : $params['data']['location'])
+                ? trans('$a (TERRIT)', htmlspecialchars($params['data']['location'])) : htmlspecialchars($params['data']['location']))
             : '...';
 
         $title = '';
@@ -832,7 +832,7 @@ class LMSSmartyPlugins
                 array(
                     'type' => isset($params['type']) ? $params['type'] : 'link',
                     'icon' => isset($params['icon']) ? $params['icon'] : 'additional-selection',
-                    'class' => 'lms-ui-dropdown-toggle',
+                    'class' => isset($params['class']) ? $params['class'] : 'lms-ui-dropdown-toggle',
                     'label' => isset($params['label']) ? $params['label'] : '',
                 ),
                 $template

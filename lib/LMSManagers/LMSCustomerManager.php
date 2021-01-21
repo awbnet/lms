@@ -591,10 +591,10 @@ class LMSCustomerManager extends LMSManager implements LMSCustomerManagerInterfa
             'ssn'            => $customeradd['ssn'],
             'status'         => $customeradd['status'],
             SYSLOG::RES_USER => Auth::GetCurrentUser(),
-            'info'           => $customeradd['info'],
-            'notes'          => $customeradd['notes'],
-            'message'        => $customeradd['message'],
-            'documentmemo'   => empty($customeradd['documentmemo']) ? null : $customeradd['documentmemo'],
+            'info'           => Utils::removeInsecureHtml($customeradd['info']),
+            'notes'          => Utils::removeInsecureHtml($customeradd['notes']),
+            'message'        => Utils::removeInsecureHtml($customeradd['message']),
+            'documentmemo'   => empty($customeradd['documentmemo']) ? null : Utils::removeInsecureHtml($customeradd['documentmemo']),
             'pin'            => $customeradd['pin'],
             'regon'          => $customeradd['regon'],
             'rbename'        => $customeradd['rbename'],
@@ -776,6 +776,21 @@ class LMSCustomerManager extends LMSManager implements LMSCustomerManagerInterfa
 
         $customer_statuses = array();
         $state_conditions = array();
+
+        $consent_condition = '';
+        if (!empty($consents)) {
+            $consent_conditions = array();
+            foreach ($consents as $consentid => $consent) {
+                if ($consent >= 0) {
+                    $consent_conditions[] = ($consent == 1 ? '' : 'NOT ')
+                        . 'EXISTS (SELECT customerid FROM customerconsents cc
+                        WHERE type = ' . intval($consentid) . ' AND customerid = c.id)';
+                }
+            }
+            if (!empty($consent_conditions)) {
+                $consent_condition = '(' . implode(' AND ', $consent_conditions) . ')';
+            }
+        }
 
         if (!isset($state) || !is_array($state)) {
             $state = array();
@@ -1338,6 +1353,7 @@ class LMSCustomerManager extends LMSManager implements LMSCustomerManagerInterfa
                 . ($nodegroup ? ' AND EXISTS (SELECT 1 FROM nodegroupassignments na
                     JOIN vnodes n ON (n.id = na.nodeid)
                     WHERE n.ownerid = c.id AND na.nodegroupid = ' . intval($nodegroup) . ')' : '')
+                . (!empty($consent_condition) ? ' AND ' . $consent_condition : '')
                 . (isset($sqlsarg) ? ' AND (' . $sqlsarg . ')' : '')
                 . ($sqlord != ''  && !$count ? $sqlord . ' ' . $direction : '')
                 . ($limit !== null && !$count ? ' LIMIT ' . $limit : '')
@@ -1722,12 +1738,12 @@ class LMSCustomerManager extends LMSManager implements LMSCustomerManagerInterfa
             'ten'            => $customerdata['ten'],
             'ssn'            => $customerdata['ssn'],
             SYSLOG::RES_USER => Auth::GetCurrentUser(),
-            'info'           => $customerdata['info'],
-            'notes'          => $customerdata['notes'],
+            'info'           => Utils::removeInsecureHtml($customerdata['info']),
+            'notes'          => Utils::removeInsecureHtml($customerdata['notes']),
             'lastname'       => $customerdata['lastname'],
             'name'           => $customerdata['name'],
-            'message'        => $customerdata['message'],
-            'documentmemo'   => empty($customerdata['documentmemo']) ? null : $customerdata['documentmemo'],
+            'message'        => Utils::removeInsecureHtml($customerdata['message']),
+            'documentmemo'   => empty($customerdata['documentmemo']) ? null : Utils::removeInsecureHtml($customerdata['documentmemo']),
             'pin'            => $customerdata['pin'],
             'regon'          => $customerdata['regon'],
             'ict'            => $customerdata['ict'],

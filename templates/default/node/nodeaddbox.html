@@ -212,11 +212,12 @@
 										<OPTION value="-2" {if ($nodedata.invprojectid == '-2' ) } selected="selected" {/if} >- {trans("none")} -</OPTION>
 										<OPTION value="-1" {if ($nodedata.invprojectid == '-1' ) } selected="selected" {/if}>{trans("New project")}</OPTION>
 										<OPTION value="1" {if ($nodedata.invprojectid == '1' ) } selected="selected" {/if}>{trans("From root device")}</OPTION>
-										{section name=project loop=$NNprojects}
-										<OPTION VALUE="{$NNprojects[project].id}" {if ($nodedata.invprojectid == $NNprojects[project].id ) } selected="selected" {/if} >{$NNprojects[project].name}</OPTION>
-										{/section}
+										{foreach $NNprojects as $project}
+											<OPTION value="{$project.id}"{if ($nodedata.invprojectid == $project.id)} selected{/if}
+												>{$project.name|escape}</OPTION>
+										{/foreach}
 									</SELECT>
-									<INPUT TYPE="TEXT" NAME="nodedata[projectname]" VALUE="{$nodedata.projectname}"
+									<INPUT TYPE="TEXT" NAME="nodedata[projectname]" VALUE="{$nodedata.projectname|escape}"
 										{tip text="Enter new project name" trigger="projectname" } id="projectname"
 										{if !isset($nodedata.invprojectid) || empty($nodedata.invprojectid)} style="display: none;"{/if}>
 

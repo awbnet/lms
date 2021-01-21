@@ -2,7 +2,7 @@
 {block name=title}LMS: {$layout.pagetitle|striphtml}{/block}
 {block name=module_content}
 <!--// $Id$ //-->
-<H1>{$layout.pagetitle}</H1>
+<H1>{$layout.pagetitle|escape}</H1>
 <style>
 
 	.lms-ui-button-fileupload {
@@ -34,7 +34,7 @@
 			{trans("Subject:")}
 		</TD>
 		<TD>
-			{$message.subject}
+			{$message.subject|escape}
 		</TD>
 	</TR>
     </THEAD>
@@ -48,7 +48,7 @@
 		</TD>
 		<TD>
 			{if $message.userid}
-			<a href="?m=userinfo&id={$message.userid}">{$message.username}</a>
+			<a href="?m=userinfo&id={$message.userid}">{$message.username|escape}</a>
 			{else}LMS{/if}
 		</TD>
 	</TR>

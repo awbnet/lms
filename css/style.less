@@ -952,6 +952,12 @@ IMG		{ vertical-align: middle; border: 0; }
 .bold		{ font-weight: bold; }
 .crossed	{ text-decoration: line-through; }
 
+.lms-ui-crossed	{
+	text-decoration: @crossed-text-decoration;
+	text-decoration-color: @crossed-text-decoration-color;
+	text-decoration-thickness: @crossed-text-decoration-thickness;
+}
+
 .pre {
 	font-size: @font-size-high;
 	@media screen and (max-width: @font-size-normal-max-width) {
@@ -1218,7 +1224,7 @@ IMG		{ vertical-align: middle; border: 0; }
 }
 
 .lms-ui-assignment-not-commited {
-	text-decoration: line-through;
+	.lms-ui-crossed;
 }
 
 .lms-ui-document-closed {
@@ -1532,7 +1538,8 @@ table.lmsbox {
 }
 */
 
-table.lmsbox.lms-ui-background-cycle > tbody > tr {
+table.lmsbox.lms-ui-background-cycle > tbody > tr,
+table.lmsbox-inner.lms-ui-background-cycle > tbody > tr {
 	border-bottom: @dotted-line;
 	&.lms-ui-resource-deleted:not(.lms-ui-button-panel):not(.lms-ui-header-panel) {
 		&:nth-child(even) {

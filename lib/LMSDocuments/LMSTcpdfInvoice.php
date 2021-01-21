@@ -515,8 +515,18 @@ class LMSTcpdfInvoice extends LMSInvoice
         }
 
         if (ConfigHelper::checkValue(ConfigHelper::getConfig('invoices.customer_credentials', true))) {
-            $pin = '<b>' . trans('Customer ID: $a', sprintf('%04d', $this->data['customerid'])) . '</b><br>';
-            $pin .= '<b>PIN: ' . (strlen($this->data['customerpin']) < 4 ? sprintf('%04d', $this->data['customerpin']) : $this->data['customerpin']) . '</b><br>';
+            $pin = str_replace(
+                array('%cid', '%pin'),
+                array(
+                    sprintf('%04d', $this->data['customerid']),
+                    strlen($this->data['customerpin']) < 4 ? sprintf('%04d', $this->data['customerpin']) : $this->data['customerpin']
+                ),
+                ConfigHelper::getConfig(
+                    'invoices.customer_credentials_format',
+                    '<b>' . trans('Customer ID: %cid') . '</b><br>'
+                    . '<b>' . trans('PIN: %pin') . '</b><br>'
+                )
+            );
 
             $this->backend->SetFont(self::TCPDF_FONT, 'B', 8);
             $this->backend->writeHTMLCell('', '', 125, $oldy + round(($y - $oldy) / 2), $pin, 0, 1, 0, true, 'L');
@@ -957,13 +967,13 @@ class LMSTcpdfInvoice extends LMSInvoice
         $this->invoice_memo();
         if (($this->data['customerbalance'] < 0 || ConfigHelper::checkValue(ConfigHelper::getConfig('invoices.always_show_form', true)))
             && !isset($this->data['rebate'])) {
-            if ($this->backend->GetY() > 180) {
-                $this->backend->AppendPage();
-            }
-
             /* FT-0100 form */
             $lms = LMS::getInstance();
             if ($lms->checkCustomerConsent($this->data['customerid'], CCONSENT_TRANSFERFORM)) {
+                if ($this->backend->GetY() > 180) {
+                    $this->backend->AppendPage();
+                }
+
                 $this->invoice_transferform(new LMSTcpdfTransferForm('Transfer form', $pagesize = 'A4', $orientation = 'portrait'));
             }
         }
