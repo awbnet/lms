@@ -34,6 +34,19 @@ version 27-git (????-??-??):
   - enhancement: allow to tie vlans with netnodes [interduo]
   - improvement: 'phpui.nodepassword_allowed_characters' controls allowed character set in generated
     node password [chilan]
+  - improvement: implemented 'with active tariffless liabilities' and 'with tariffless liabilities'
+    customer filters [chilan]
+  - improvement: 'phpui.ui_lang' setting allow to force UI language selection [chilan]
+  - improvement: changed default value of 'phpui.promotion_preserve_at_day' from 'false'
+    to 'true' [chilan]
+  - improvement: allow to check/uncheck all consent checkboxes with single click [chilan]
+  - improvement: 'phpui.nodepassword_required' allows to make password required
+    or recommended ('false' by default) [chilan]
+  - enhancement: allow to change ports in network link properties popup [chilan]
+  - enhancement: introduce support for customer email address properties to support EPIX MdO [ravvar]
+  - enhancement: number plan user assignment support [chilan]
+  - enhancement: 'rt.detect_customer_location_address' controls location address automatic detection
+    of newly created helpdesk ticket ('false' by default) [chilan]
 
 version 26.0 (2020-12-15):
 
