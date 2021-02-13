@@ -197,7 +197,7 @@ $categories = ConfigHelper::getConfig('rt.default_categories', 'default');
 $categories = preg_split('/\s*,\s*/', trim($categories));
 $auto_open = ConfigHelper::checkValue(ConfigHelper::getConfig('rt.auto_open', '0'));
 //$tmp_dir = ConfigHelper::getConfig('rt.tmp_dir', '', true);
-$notify = ConfigHelper::checkValue(ConfigHelper::getConfig('rt.newticket_notify', '0'));
+$notify = ConfigHelper::checkValue(ConfigHelper::getConfig('rt.newticket_notify', true));
 $customerinfo = ConfigHelper::checkValue(ConfigHelper::getConfig('rt.include_customerinfo', '1'));
 $lms_url = ConfigHelper::getConfig('rt.lms_url', 'http://localhost/lms/');
 $autoreply_from = ConfigHelper::getConfig('rt.mail_from', '', true);
@@ -717,7 +717,7 @@ while (isset($buffer) || ($postid !== false && $postid !== null)) {
             if (empty($reqcustid) || !$detect_customer_location_address) {
                 $address_id = null;
             } else {
-                $address_id = $LMS->CopyAddress($LMS->detectCustomerLocationAddress($reqcustid));
+                $address_id = $LMS->detectCustomerLocationAddress($reqcustid);
             }
 
             $ticket_id = $LMS->TicketAdd(array(

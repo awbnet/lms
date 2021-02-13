@@ -420,6 +420,7 @@ CREATE TABLE divisions (
 	bank            varchar(100)    DEFAULT NULL,
 	account         varchar(48) 	NOT NULL DEFAULT '',
     email varchar(255)              DEFAULT NULL,
+    phone varchar(255) DEFAULT NULL,
 	inv_header      text    	NOT NULL DEFAULT '',
 	inv_footer      text    	NOT NULL DEFAULT '',
 	inv_author      text    	NOT NULL DEFAULT '',
@@ -3491,7 +3492,7 @@ URL: %url
 ('phpui','ticket_template_file','rtticketprint.html','',0),
 ('phpui','use_current_payday','false','',0),
 ('phpui','default_monthly_payday','','',0),
-('phpui','newticket_notify','false','',0),
+('phpui','newticket_notify','true','',0),
 ('phpui','to_words_short_version','false','',0),
 ('phpui','ticketlist_status','','',0),
 ('phpui','ewx_support','false','',0),
@@ -3520,7 +3521,7 @@ URL: %url
 ('invoices','cnote_template_file','invoice.html','',0),
 ('invoices','print_balance_history','false','',0),
 ('invoices','print_balance_history_limit','10','',0),
-('invoices','default_printpage','original,copy','',0),
+('invoices','default_printpage','original','',0),
 ('invoices','type','html','',0),
 ('invoices','attachment_name','','',0),
 ('invoices','paytime','14','',0),
@@ -3961,4 +3962,4 @@ INSERT INTO netdevicemodels (name, alternative_name, netdeviceproducerid) VALUES
 ('XR7', 'XR7 MINI PCI PCBA', 2),
 ('XR9', 'MINI PCI 600MW 900MHZ', 2);
 
-INSERT INTO dbinfo (keytype, keyvalue) VALUES ('dbversion', '2021020301');
+INSERT INTO dbinfo (keytype, keyvalue) VALUES ('dbversion', '2021021200');

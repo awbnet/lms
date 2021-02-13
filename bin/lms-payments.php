@@ -200,7 +200,7 @@ $suspension_percentage = ConfigHelper::getConfig('finances.suspension_percentage
 $unit_name = trans(ConfigHelper::getConfig('payments.default_unit_name'));
 $check_invoices = ConfigHelper::checkConfig('payments.check_invoices');
 $proforma_generates_commitment = ConfigHelper::checkConfig('phpui.proforma_invoice_generates_commitment');
-$delete_old_assignments_after_days = intval(ConfigHelper::getConfig('payments.delete_old_assignments_after_days', 30));
+$delete_old_assignments_after_days = intval(ConfigHelper::getConfig('payments.delete_old_assignments_after_days', 0));
 $prefer_settlement_only = ConfigHelper::checkConfig('payments.prefer_settlement_only');
 $prefer_netto = ConfigHelper::checkConfig('payments.prefer_netto');
 $customergroups = ConfigHelper::getConfig('payments.customergroups', '', true);
@@ -212,8 +212,7 @@ $allowed_customer_status =
 Utils::determineAllowedCustomerStatus(
     isset($options['customer-status'])
         ? $options['customer-status']
-        : ConfigHelper::getConfig('payments.allowed_customer_status', ''),
-    -1
+        : ConfigHelper::getConfig('payments.allowed_customer_status', '')
 );
 
 if (empty($allowed_customer_status)) {
@@ -1098,6 +1097,8 @@ if (!empty($currencyvalues) && !$quiet) {
 }
 $currencyvalues[Localisation::getCurrentCurrency()] = 1.0;
 
+$DB->BeginTrans();
+
 foreach ($assigns as $assign) {
     $cid = $assign['customerid'];
     $divid = ($assign['divisionid'] ? $assign['divisionid'] : 0);
@@ -1826,5 +1827,7 @@ if ($delete_old_assignments_after_days) {
 
 // clear voip tariff rule states
 $DB->Execute("DELETE FROM voip_rule_states");
+
+$DB->CommitTrans();
 
 $DB->Destroy();

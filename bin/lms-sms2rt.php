@@ -196,7 +196,7 @@ if (!empty($service)) {
     LMSConfig::getConfig()->getSection('sms')->addVariable(new ConfigVariable('service', $service));
 }
 $prefix = ConfigHelper::getConfig($config_section . '.prefix', '', true);
-$newticket_notify = ConfigHelper::checkConfig('phpui.newticket_notify');
+$newticket_notify = ConfigHelper::checkValue(ConfigHelper::getConfig('phpui.newticket_notify', true));
 $helpdesk_customerinfo = ConfigHelper::checkConfig('phpui.helpdesk_customerinfo');
 $helpdesk_sendername = ConfigHelper::getConfig('phpui.helpdesk_sender_name');
 
@@ -325,7 +325,7 @@ if (($fh = fopen($message_file, "r")) != null) {
     if (empty($customer['cid']) || !$detect_customer_location_address) {
         $address_id = null;
     } else {
-        $address_id = $LMS->CopyAddress($LMS->detectCustomerLocationAddress($customer['cid']));
+        $address_id = $LMS->detectCustomerLocationAddress($customer['cid']);
     }
 
     $tid = $LMS->TicketAdd(array(

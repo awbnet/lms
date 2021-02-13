@@ -887,7 +887,7 @@ class LMSCustomerManager extends LMSManager implements LMSCustomerManagerInterfa
                     $state_conditions[] = 'NOT EXISTS (SELECT 1 FROM nodes WHERE ownerid = c.id)';
                     break;
                 case 66:
-                    $state_conditions[] = 'EXISTS (SELECT 1 FROM assignments WHERE invoice = 0 AND commited = 1 WHERE customerid = c.id)';
+                    $state_conditions[] = 'EXISTS (SELECT 1 FROM assignments WHERE invoice = 0 AND commited = 1 AND customerid = c.id)';
                     break;
                 case 67:
                     $state_conditions[] = 'c.building IS NULL';
@@ -918,7 +918,7 @@ class LMSCustomerManager extends LMSManager implements LMSCustomerManagerInterfa
                     $state_conditions[] = 'EXISTS (SELECT 1
                         FROM customer_addresses ca
                         JOIN addresses a ON a.id = ca.address_id
-                        WHERE a.zip IS NULL AND ca.customer_id = c.id)';
+                        WHERE a.zip IS NULL AND ca.type <> ' . BILLING_ADDRESS . ' AND ca.customer_id = c.id)';
                     break;
                 case 75:
                     $state_conditions[] = 'EXISTS (SELECT 1 FROM assignments WHERE commited = 1 AND (vdiscount > 0 OR pdiscount > 0) AND customerid = c.id)';
@@ -1458,6 +1458,9 @@ class LMSCustomerManager extends LMSManager implements LMSCustomerManagerInterfa
     {
         $type = strtolower($type);
 
+        $daysecond = time() - strtotime('today');
+        $weekday = 1 << (date('N') - 1);
+
         $result = $this->db->GetAll("SELECT
                                         n.id, n.name, mac, ipaddr, inet_ntoa(ipaddr) AS ip, n.netdev, nd.name as netdev_name,
                                         n.linktype, n.linktechnology, n.linkspeed,
@@ -1467,7 +1470,12 @@ class LMSCustomerManager extends LMSManager implements LMSCustomerManagerInterfa
                                         (SELECT COUNT(*)
                                         FROM nodegroupassignments
                                         WHERE nodeid = n.id) AS gcount,
-                                        n.netid, net.name AS netname
+                                        n.netid, net.name AS netname,
+                                        (CASE WHEN EXISTS (
+                                            SELECT 1 FROM nodelocks
+                                            WHERE disabled = 0 AND (days & " . $weekday . ") > 0 AND " . $daysecond . " >= fromsec
+                                                AND " . $daysecond . " <= tosec AND nodeid = n.id
+                                        ) THEN 1 ELSE 0 END) AS locked
                                      FROM
                                         vnodes n
                                      LEFT JOIN addresses addr ON addr.id = n.address_id
